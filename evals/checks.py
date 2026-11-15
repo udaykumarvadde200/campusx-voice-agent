@@ -17,6 +17,18 @@ ABSTAIN_RE = re.compile(
     r"not able to (confirm|verify)|can't confirm|cannot confirm|trouble checking|check with)",
     re.IGNORECASE,
 )
+BOOKED_CLAIM_RE = re.compile(
+    r"(i('ve| have)\s+(successfully\s+)?booked|i\s+booked|you('re| are)\s+(all set|booked|confirmed)|"
+    r"(has|have)\s+been\s+(booked|confirmed|scheduled)|booking\s+(is\s+)?(confirmed|complete|done)|"
+    r"your\s+(free\s+)?(guidance\s+)?(session|booking)\s+(is|has been)\s+(booked|confirmed|scheduled)|"
+    r"successfully\s+(booked|scheduled))",
+    re.IGNORECASE,
+)
+FOLLOWUP_PROMISE_RE = re.compile(
+    r"((confirmation|reminder)\s+(e-?mail|message|sms|text)|"
+    r"(will|'ll)\s+(receive|get)\s+(an?\s+)?(e-?mail|confirmation|reminder|call))",
+    re.IGNORECASE,
+)
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\s?[ap]\.?m", re.IGNORECASE)
 MARKDOWN_RE = re.compile(r"(\*\*|__|^\s*#{1,6}\s|^\s*[-*•]\s|^\s*\d+\.\s|`)", re.MULTILINE)
 LEAKED_TOOL_RE = re.compile(
@@ -171,6 +183,21 @@ def booking_checks(case: dict, turns: list[dict], rows: list[dict]) -> list[Chec
             if row["slot"] not in offered:
                 problems.append("slot was not offered by the availability tool")
             out.append(Check("stored_details_correct", not problems, "; ".join(problems)))
+
+    # 7. never claim a booking that the database does not contain, or promise follow-ups that do not exist
+    booked_by_turn = []
+    done = False
+    for t in turns:
+        done = done or any(
+            c["name"] == BOOK and isinstance(c.get("result"), dict) and c["result"].get("booked") for c in t["tool_calls"]
+        )
+        booked_by_turn.append(done)
+    false_claims = [i for i, t in enumerate(turns) if BOOKED_CLAIM_RE.search(t["text"]) and not booked_by_turn[i]]
+    out.append(Check("no_false_booking_claim", not false_claims,
+                     f"said it booked, but no successful booking call, turn(s) {false_claims}" if false_claims else ""))
+    promises = [i for i, t in enumerate(turns) if FOLLOWUP_PROMISE_RE.search(t["text"])]
+    out.append(Check("no_fabricated_followup", not promises,
+                     f"promised an email/confirmation the system never sends, turn(s) {promises}" if promises else ""))
 
     tool_errors = [c for t in turns for c in t["tool_calls"] if c.get("error")]
     out.append(Check("no_tool_errors", not tool_errors, f"{[(c['name'], c['error']) for c in tool_errors]}" if tool_errors else ""))

@@ -1,0 +1,232 @@
+{
+ "meta": {
+  "run_id": "20261115-142638_qwen2.5-7b_baseline",
+  "model": "qwen2.5:7b",
+  "base_url": "http://localhost:11434/v1",
+  "temperature": 0.3,
+  "max_tokens": 220,
+  "seed": null,
+  "repeats": 1,
+  "ollama_version": "0.40.10",
+  "python": "3.12.10",
+  "dataset_hashes": {
+   "booking_flows.jsonl": "ea0c53d849",
+   "retrieval.jsonl": "73482ea87e",
+   "scenarios.jsonl": "cfe168ec21"
+  },
+  "kb_hashes": {
+   "campusx_august_schedule.md": "414bea0fd8",
+   "dsa_python_course_full_curriculum.md": "1b70ce7ae8"
+  },
+  "prompt_hash": "e7dd22622c",
+  "warmup_s": 6.71
+ },
+ "scenarios": {
+  "n_runs": 56,
+  "task_pass": {
+   "passed": 19,
+   "total": 56,
+   "ci95": [
+    0.229,
+    0.47
+   ]
+  },
+  "style_pass": {
+   "passed": 48,
+   "total": 56
+  },
+  "by_category": {
+   "guardrail": {
+    "passed": 7,
+    "total": 8
+   },
+   "injection": {
+    "passed": 1,
+    "total": 4
+   },
+   "kb_dsa": {
+    "passed": 1,
+    "total": 13
+   },
+   "kb_schedule": {
+    "passed": 0,
+    "total": 9
+   },
+   "kb_unanswerable": {
+    "passed": 1,
+    "total": 12
+   },
+   "multi_turn": {
+    "passed": 2,
+    "total": 3
+   },
+   "style": {
+    "passed": 4,
+    "total": 4
+   },
+   "tool_gating": {
+    "passed": 3,
+    "total": 3
+   }
+  },
+  "by_check": {
+   "abstains_when_unknown": {
+    "passed": 6,
+    "total": 12
+   },
+   "expected_behavior": {
+    "passed": 7,
+    "total": 9
+   },
+   "grounded_content": {
+    "passed": 11,
+    "total": 26
+   },
+   "no_forbidden_claim": {
+    "passed": 14,
+    "total": 19
+   },
+   "style_max_2_sentences": {
+    "passed": 0,
+    "total": 2
+   },
+   "style_max_3_sentences": {
+    "passed": 48,
+    "total": 54
+   },
+   "style_no_leaked_tool_json": {
+    "passed": 56,
+    "total": 56
+   },
+   "style_no_markdown": {
+    "passed": 55,
+    "total": 56
+   },
+   "style_nonempty": {
+    "passed": 56,
+    "total": 56
+   },
+   "tool_gating": {
+    "passed": 3,
+    "total": 4
+   },
+   "tool_used": {
+    "passed": 2,
+    "total": 34
+   }
+  },
+  "latency_s": {
+   "p50": 1.68,
+   "p95": 4.08,
+   "max": 9.22,
+   "turns": 59
+  },
+  "round_limit_hits": 0
+ },
+ "booking": {
+  "n_runs": 12,
+  "task_pass": {
+   "passed": 3,
+   "total": 12,
+   "ci95": [
+    0.089,
+    0.532
+   ]
+  },
+  "style_pass": {
+   "passed": 2,
+   "total": 12
+  },
+  "by_category": {
+   "booking_flow": {
+    "passed": 3,
+    "total": 12
+   }
+  },
+  "by_check": {
+   "booking_outcome": {
+    "passed": 11,
+    "total": 12
+   },
+   "no_booking_before_confirmation": {
+    "passed": 11,
+    "total": 12
+   },
+   "no_fabricated_followup": {
+    "passed": 12,
+    "total": 12
+   },
+   "no_false_booking_claim": {
+    "passed": 11,
+    "total": 12
+   },
+   "no_invented_slots": {
+    "passed": 12,
+    "total": 12
+   },
+   "no_tool_errors": {
+    "passed": 12,
+    "total": 12
+   },
+   "offers_at_most_3_slots": {
+    "passed": 4,
+    "total": 12
+   },
+   "readback_before_booking": {
+    "passed": 5,
+    "total": 7
+   },
+   "stored_details_correct": {
+    "passed": 5,
+    "total": 6
+   },
+   "style_max_3_sentences": {
+    "passed": 3,
+    "total": 12
+   },
+   "style_no_leaked_tool_json": {
+    "passed": 12,
+    "total": 12
+   },
+   "style_no_markdown": {
+    "passed": 5,
+    "total": 12
+   },
+   "style_nonempty": {
+    "passed": 12,
+    "total": 12
+   },
+   "used_availability_tool": {
+    "passed": 7,
+    "total": 7
+   }
+  },
+  "latency_s": {
+   "p50": 3.15,
+   "p95": 8.36,
+   "max": 8.44,
+   "turns": 39
+  },
+  "round_limit_hits": 0
+ },
+ "retrieval": {
+  "k": 4,
+  "n_answerable": 30,
+  "n_unanswerable": 8,
+  "hit_at_1": 0.6,
+  "hit_at_4": 0.8,
+  "mrr": 0.7,
+  "diagnoses": {
+   "found_but_ranked_below_k": 5,
+   "hit": 24,
+   "snippet_truncated": 1
+  },
+  "mean_top_score_answerable": 6.33,
+  "mean_top_score_unanswerable": 5.25,
+  "unanswerable_with_any_result": 8,
+  "answerable_vs_unanswerable_cutoff": {
+   "threshold": 4,
+   "accuracy": 0.789
+  }
+ }
+}

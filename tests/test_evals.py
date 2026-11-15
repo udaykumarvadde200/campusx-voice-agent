@@ -156,3 +156,27 @@ def test_report_and_compare(tmp_path):
     assert "Fixed by B: 2" in text and "Broken by B: 0" in text
     assert report.summarize_agent(a)["task_pass"]["passed"] == 1
     assert compare.sign_test_p(0, 8) < 0.01
+
+
+def test_false_booking_claim_and_fabricated_email_are_flagged():
+    case = next(c for c in load_jsonl("booking_flows.jsonl") if c["id"] == "book-all-details-first")
+    db = harness.new_isolated_db()
+    chat = Scripted(
+        [
+            {"content": "Pick a time, Ravi.", "tool_calls": []},
+            {"content": "Confirming Ravi Kumar, ravi.kumar@example.com. Correct?", "tool_calls": []},
+            {"content": "I've booked your session. You'll receive a confirmation email shortly.", "tool_calls": []},
+        ]
+    )
+    turns = asyncio.run(harness.run_conversation(case["turns"], chat, harness.tools_schema()))
+    res = {c.name: c.passed for c in checks.booking_checks(case, turns, harness.read_bookings(db))}
+    assert res["no_false_booking_claim"] is False
+    assert res["no_fabricated_followup"] is False
+    assert res["booking_outcome"] is False
+
+
+def test_honest_pre_booking_language_is_not_flagged():
+    turns = [{"text": "Shall I book it for you? I will book it once you say yes.", "tool_calls": []}]
+    case = {"confirm_turn": None, "expect_booking": False, "expected": {}}
+    res = {c.name: c.passed for c in checks.booking_checks(case, turns, [])}
+    assert res["no_false_booking_claim"] is True
