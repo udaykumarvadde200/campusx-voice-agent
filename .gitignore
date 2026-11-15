@@ -9,7 +9,3 @@ __pycache__/
 data/guidance_bookings.db
 evals/results/*
 !evals/results/.gitkeep
-
-data/guidance_bookings.db
-evals/results/*
-!evals/results/.gitkeep

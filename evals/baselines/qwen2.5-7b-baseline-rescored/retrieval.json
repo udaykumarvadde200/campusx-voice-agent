@@ -1,0 +1,896 @@
+{
+ "summary": {
+  "k": 4,
+  "n_answerable": 30,
+  "n_unanswerable": 8,
+  "hit_at_1": 0.6,
+  "hit_at_4": 0.8,
+  "mrr": 0.7,
+  "diagnoses": {
+   "found_but_ranked_below_k": 5,
+   "hit": 24,
+   "snippet_truncated": 1
+  },
+  "mean_top_score_answerable": 6.33,
+  "mean_top_score_unanswerable": 5.25,
+  "unanswerable_with_any_result": 8,
+  "answerable_vs_unanswerable_cutoff": {
+   "threshold": 4,
+   "accuracy": 0.789
+  }
+ },
+ "records": [
+  {
+   "id": "r-lang",
+   "query": "Which programming language does the DSA course use?",
+   "answerable": true,
+   "top_score": 10,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    10,
+    6,
+    5,
+    5
+   ],
+   "rank": 11,
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "rr": 0.09090909090909091,
+   "diagnosis": "found_but_ranked_below_k"
+  },
+  {
+   "id": "r-practice",
+   "query": "Which platforms can I practice on?",
+   "answerable": true,
+   "top_score": 7,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    7,
+    5,
+    4,
+    4
+   ],
+   "rank": 4,
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "rr": 0.25,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-tools",
+   "query": "Do I need VS Code or Jupyter?",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    5,
+    4,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-beginner",
+   "query": "Is the course suitable for beginners?",
+   "answerable": true,
+   "top_score": 7,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    7,
+    7,
+    7,
+    6
+   ],
+   "rank": 2,
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "rr": 0.5,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-graphs-bfs",
+   "query": "Does the course teach graphs, BFS and DFS?",
+   "answerable": true,
+   "top_score": 7,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    7,
+    7,
+    6,
+    5
+   ],
+   "rank": 7,
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "rr": 0.14285714285714285,
+   "diagnosis": "found_but_ranked_below_k"
+  },
+  {
+   "id": "r-mst",
+   "query": "minimum spanning tree and shortest path",
+   "answerable": true,
+   "top_score": 7,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    7,
+    7,
+    3,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-dsu",
+   "query": "do you cover disjoint set union",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    5,
+    5,
+    3
+   ],
+   "rank": 2,
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "rr": 0.5,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-trees",
+   "query": "tree traversals inorder preorder postorder",
+   "answerable": true,
+   "top_score": 6,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    6,
+    3,
+    3,
+    2
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-sorting",
+   "query": "which sorting algorithms are taught",
+   "answerable": true,
+   "top_score": 4,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    4,
+    3,
+    3,
+    3
+   ],
+   "rank": 5,
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "rr": 0.2,
+   "diagnosis": "found_but_ranked_below_k"
+  },
+  {
+   "id": "r-linked-list",
+   "query": "linked list cycle detection",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    3,
+    2,
+    2
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-recursion",
+   "query": "will I learn recursion",
+   "answerable": true,
+   "top_score": 10,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    10,
+    3,
+    3,
+    3
+   ],
+   "rank": 2,
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "rr": 0.5,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-hashing",
+   "query": "hash maps and frequency counting",
+   "answerable": true,
+   "top_score": 6,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    6,
+    3,
+    3,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-stack",
+   "query": "stack and valid parentheses",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    3,
+    3,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-queue",
+   "query": "queue deque circular queue",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    2,
+    2,
+    2
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-binary-search",
+   "query": "binary search on answer",
+   "answerable": true,
+   "top_score": 10,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    10,
+    6,
+    4,
+    4
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-strings",
+   "query": "anagrams and palindromes",
+   "answerable": true,
+   "top_score": 4,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    4,
+    3,
+    3,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-prefix-sliding",
+   "query": "prefix sums and sliding window",
+   "answerable": true,
+   "top_score": 7,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    7,
+    7,
+    4,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-objectives",
+   "query": "what are the objectives of the course, interview ready code",
+   "answerable": true,
+   "top_score": 9,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    9,
+    8,
+    6,
+    5
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-audience",
+   "query": "is this course for working professionals",
+   "answerable": true,
+   "top_score": 8,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    8,
+    6,
+    6,
+    5
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-sched-3aug",
+   "query": "what is on 3 August",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    4,
+    4
+   ],
+   "rank": 3,
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "rr": 0.3333333333333333,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-sched-13aug",
+   "query": "session on 13 August",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    3,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-sched-21aug",
+   "query": "what is on 21 August",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    4,
+    4
+   ],
+   "rank": 3,
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "rr": 0.3333333333333333,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-sched-27aug",
+   "query": "is LLMOps Session 20 on 27 August confirmed",
+   "answerable": true,
+   "top_score": 9,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    9,
+    7,
+    4,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-sched-31aug",
+   "query": "session on 31 August",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    3,
+    3
+   ],
+   "rank": null,
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "rr": 0.0,
+   "diagnosis": "snippet_truncated"
+  },
+  {
+   "id": "r-sandbox-timing",
+   "query": "what time are the YT Sandbox sessions",
+   "answerable": true,
+   "top_score": 6,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    6,
+    5,
+    5,
+    4
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-tentative-rule",
+   "query": "what does tentative mean for a session",
+   "answerable": true,
+   "top_score": 6,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    6,
+    6,
+    4,
+    4
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-cancelled-rule",
+   "query": "what if a session is cancelled or postponed",
+   "answerable": true,
+   "top_score": 8,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    8,
+    5,
+    4,
+    4
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-speech-graph",
+   "query": "do you guys teach graph stuff",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    3,
+    3,
+    3
+   ],
+   "rank": 22,
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "rr": 0.045454545454545456,
+   "diagnosis": "found_but_ranked_below_k"
+  },
+  {
+   "id": "r-speech-sandbox",
+   "query": "when is sandbox",
+   "answerable": true,
+   "top_score": 4,
+   "n_results": 40,
+   "top_sources": [
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    4,
+    4,
+    3,
+    3
+   ],
+   "rank": 1,
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "rr": 1.0,
+   "diagnosis": "hit"
+  },
+  {
+   "id": "r-speech-language",
+   "query": "what language i need to know",
+   "answerable": true,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    5,
+    4,
+    3
+   ],
+   "rank": 10,
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "rr": 0.1,
+   "diagnosis": "found_but_ranked_below_k"
+  },
+  {
+   "id": "r-no-price",
+   "query": "how much does the course cost",
+   "answerable": false,
+   "top_score": 6,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    6,
+    5,
+    5,
+    4
+   ]
+  },
+  {
+   "id": "r-no-duration",
+   "query": "how many weeks is the course",
+   "answerable": false,
+   "top_score": 6,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    6,
+    5,
+    5,
+    5
+   ]
+  },
+  {
+   "id": "r-no-certificate",
+   "query": "will I get a certificate",
+   "answerable": false,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "id": "r-no-refund",
+   "query": "what is the refund policy",
+   "answerable": false,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    4,
+    4
+   ]
+  },
+  {
+   "id": "r-no-dsmp-fee",
+   "query": "what is the DSMP fee",
+   "answerable": false,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    4,
+    4
+   ]
+  },
+  {
+   "id": "r-no-placement",
+   "query": "do you offer placement assistance",
+   "answerable": false,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    3,
+    3,
+    2
+   ]
+  },
+  {
+   "id": "r-no-java",
+   "query": "do you teach Java",
+   "answerable": false,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md"
+   ],
+   "top_scores": [
+    5,
+    3,
+    3,
+    2
+   ]
+  },
+  {
+   "id": "r-no-voice2",
+   "query": "when is Voice Agents 2",
+   "answerable": false,
+   "top_score": 5,
+   "n_results": 40,
+   "top_sources": [
+    "dsa_python_course_full_curriculum.md",
+    "campusx_august_schedule.md",
+    "campusx_august_schedule.md",
+    "dsa_python_course_full_curriculum.md"
+   ],
+   "top_scores": [
+    5,
+    4,
+    4,
+    4
+   ]
+  }
+ ]
+}

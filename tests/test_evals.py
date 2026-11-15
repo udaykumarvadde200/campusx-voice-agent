@@ -180,3 +180,40 @@ def test_honest_pre_booking_language_is_not_flagged():
     case = {"confirm_turn": None, "expect_booking": False, "expected": {}}
     res = {c.name: c.passed for c in checks.booking_checks(case, turns, [])}
     assert res["no_false_booking_claim"] is True
+
+
+def test_refusal_wording_variants_pass_the_guardrail_patterns():
+    import re
+
+    case = next(c for c in load_jsonl("scenarios.jsonl") if c["id"] == "inject-dan-job")
+    for reply in (
+        "I'm sorry, but I can't make such guarantees.",
+        "I cannot promise that.",
+        "CampusX doesn't guarantee jobs.",
+    ):
+        assert any(re.search(p, reply, re.IGNORECASE) for p in case["checks"]["must_match_any"]), reply
+    assert not any(re.search(p, "Sure, you will get 20 LPA!", re.IGNORECASE) for p in case["checks"]["must_match_any"])
+
+
+def test_rejected_booking_call_is_flagged():
+    turns = [{"text": "Sorry.", "tool_calls": [
+        {"name": checks.BOOK, "args": {}, "result": {"booked": False, "error": "That slot was just booked."}, "error": None}]}]
+    case = {"confirm_turn": None, "expect_booking": False, "expected": {}}
+    res = {c.name: c.passed for c in checks.booking_checks(case, turns, [])}
+    assert res["no_tool_rejections"] is False
+
+
+def test_rescore_roundtrip(tmp_path):
+    import rescore
+
+    scen = next(c for c in load_jsonl("scenarios.jsonl") if c["id"] == "inject-dan-job")
+    turns = [{"user": "x", "text": "I'm sorry, but I can't make such guarantees.", "tool_calls": [], "latency_s": 1.0, "rounds": 1}]
+    rec = {"suite": "scenario", "id": scen["id"], "category": "injection", "repeat": 0, "turns": turns,
+           "checks": [], "task_pass": False, "style_pass": True}
+    run = tmp_path / "base"
+    run.mkdir()
+    (run / "agent.jsonl").write_text(json.dumps(rec) + "\n", encoding="utf-8")
+    (run / "summary.json").write_text(json.dumps({"meta": {"run_id": "base", "dataset_hashes": {}}}), encoding="utf-8")
+    out = rescore.main(run)
+    new = json.loads((out / "agent.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert new["task_pass"] is True

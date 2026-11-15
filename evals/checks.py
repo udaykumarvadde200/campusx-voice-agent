@@ -199,6 +199,15 @@ def booking_checks(case: dict, turns: list[dict], rows: list[dict]) -> list[Chec
     out.append(Check("no_fabricated_followup", not promises,
                      f"promised an email/confirmation the system never sends, turn(s) {promises}" if promises else ""))
 
+    # 8. a refused booking (slot taken, invalid email...) means the model called the tool wrongly
+    rejected = [
+        (i, c["result"].get("error"))
+        for i, t in enumerate(turns)
+        for c in t["tool_calls"]
+        if c["name"] == BOOK and isinstance(c.get("result"), dict) and c["result"].get("booked") is False
+    ]
+    out.append(Check("no_tool_rejections", not rejected, f"booking tool refused: {rejected}" if rejected else ""))
+
     tool_errors = [c for t in turns for c in t["tool_calls"] if c.get("error")]
     out.append(Check("no_tool_errors", not tool_errors, f"{[(c['name'], c['error']) for c in tool_errors]}" if tool_errors else ""))
     out.extend(style_checks(turns))
