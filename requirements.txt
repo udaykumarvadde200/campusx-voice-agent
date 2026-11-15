@@ -1,0 +1,2 @@
+pipecat-ai[openai,runner,silero,webrtc,websocket,whisper,kokoro]==1.6.0
+python-dotenv
