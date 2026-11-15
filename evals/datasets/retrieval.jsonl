@@ -1,0 +1,38 @@
+{"id": "r-lang", "query": "Which programming language does the DSA course use?", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["python 3"], "note": ""}
+{"id": "r-practice", "query": "Which platforms can I practice on?", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["leetcode", "hackerrank"], "note": ""}
+{"id": "r-tools", "query": "Do I need VS Code or Jupyter?", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["vs code", "jupyter"], "note": ""}
+{"id": "r-beginner", "query": "Is the course suitable for beginners?", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["beginners starting dsa"], "note": ""}
+{"id": "r-graphs-bfs", "query": "Does the course teach graphs, BFS and DFS?", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["breadth first search", "depth first search"], "note": ""}
+{"id": "r-mst", "query": "minimum spanning tree and shortest path", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["minimum spanning tree", "shortest path"], "note": ""}
+{"id": "r-dsu", "query": "do you cover disjoint set union", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["disjoint set union"], "note": ""}
+{"id": "r-trees", "query": "tree traversals inorder preorder postorder", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["inorder traversal", "postorder traversal"], "note": ""}
+{"id": "r-sorting", "query": "which sorting algorithms are taught", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["merge sort", "quick sort", "counting sort"], "note": ""}
+{"id": "r-linked-list", "query": "linked list cycle detection", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["fast and slow pointer", "cycle detection"], "note": ""}
+{"id": "r-recursion", "query": "will I learn recursion", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["recursion tree"], "note": ""}
+{"id": "r-hashing", "query": "hash maps and frequency counting", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["hash maps", "frequency counting"], "note": ""}
+{"id": "r-stack", "query": "stack and valid parentheses", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["valid parentheses"], "note": ""}
+{"id": "r-queue", "query": "queue deque circular queue", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["circular queue", "deque"], "note": ""}
+{"id": "r-binary-search", "query": "binary search on answer", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["binary search on answer"], "note": ""}
+{"id": "r-strings", "query": "anagrams and palindromes", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["anagrams", "palindromes"], "note": ""}
+{"id": "r-prefix-sliding", "query": "prefix sums and sliding window", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["prefix sums", "sliding window"], "note": ""}
+{"id": "r-objectives", "query": "what are the objectives of the course, interview ready code", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["interview-ready"], "note": ""}
+{"id": "r-audience", "query": "is this course for working professionals", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["working professionals"], "note": ""}
+{"id": "r-sched-3aug", "query": "what is on 3 August", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["3 august", "llmops session 13"], "note": ""}
+{"id": "r-sched-13aug", "query": "session on 13 August", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["13 august", "llmops session 16"], "note": ""}
+{"id": "r-sched-21aug", "query": "what is on 21 August", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["21 august", "voice agents 3"], "note": ""}
+{"id": "r-sched-27aug", "query": "is LLMOps Session 20 on 27 August confirmed", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["27 august", "tentative"], "note": "late row: may be cut by the 900-char snippet limit"}
+{"id": "r-sched-31aug", "query": "session on 31 August", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["31 august", "llmops session 21"], "note": "last row: may be cut by the 900-char snippet limit"}
+{"id": "r-sandbox-timing", "query": "what time are the YT Sandbox sessions", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["yt sandbox", "6 pm saturday"], "note": ""}
+{"id": "r-tentative-rule", "query": "what does tentative mean for a session", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["not confirmed"], "note": ""}
+{"id": "r-cancelled-rule", "query": "what if a session is cancelled or postponed", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["cancelled/postponed"], "note": ""}
+{"id": "r-speech-graph", "query": "do you guys teach graph stuff", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["adjacency list"], "note": "speech-style query"}
+{"id": "r-speech-sandbox", "query": "when is sandbox", "answerable": true, "gold_source": "campusx_august_schedule.md", "gold_keywords": ["yt sandbox"], "note": "speech-style query"}
+{"id": "r-speech-language", "query": "what language i need to know", "answerable": true, "gold_source": "dsa_python_course_full_curriculum.md", "gold_keywords": ["python 3"], "note": "speech-style query"}
+{"id": "r-no-price", "query": "how much does the course cost", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-duration", "query": "how many weeks is the course", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-certificate", "query": "will I get a certificate", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-refund", "query": "what is the refund policy", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-dsmp-fee", "query": "what is the DSMP fee", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-placement", "query": "do you offer placement assistance", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-java", "query": "do you teach Java", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
+{"id": "r-no-voice2", "query": "when is Voice Agents 2", "answerable": false, "gold_source": null, "gold_keywords": [], "note": ""}
