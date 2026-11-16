@@ -27,11 +27,12 @@ Local path: C:\Users\uday2\Downloads\campusx_voice_agent_local\local_proj   (Win
 - Transport: Pipecat SmallWebRTC dev runner, browser at http://localhost:7860
 - Tools: search_campusx_knowledge_base (local keyword search over data/knowledge_base/*.md),
   get_available_guidance_slots, book_free_guidance_session (SQLite data/guidance_bookings.db)
-- Optional Moss semantic retrieval (needs its own keys; not used, not evaluated)
+- Retrieval runs in code before every answer (grounding.py + knowledge_base.py); booking_gate.py and reply_guard.py enforce booking and speech rules
+- Optional Moss semantic retrieval (needs its own keys; not used, not evaluated; replaces the local search when configured)
 - Python 3.12 only. Pipecat pinned 1.6.0.
 - Hardware: Lenovo LOQ, Core i7-13650HX, RTX 4050 6 GB VRAM. Whisper and Kokoro run on CPU so the GPU stays free for the LLM.
 
-## Agent rules (from the system prompt in src/campusx_voice_agent/tools.py)
+## Agent rules (system prompt in src/campusx_voice_agent/tools.py; since Section B the key ones are also enforced in code)
 - Replies short and natural, no markdown (it is spoken aloud).
 - Use the knowledge base for CampusX facts; never invent facts; if unverified say so and point to support@campusx.in.
 - Never promise jobs, salaries, discounts, refunds, community links, account status, future launches, instructor availability.

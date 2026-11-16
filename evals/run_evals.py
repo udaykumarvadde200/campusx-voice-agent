@@ -60,12 +60,12 @@ def log(msg: str) -> None:
     print(msg, flush=True)
 
 
-async def run_scenarios(cases, chat, schema, repeats) -> list[dict]:
+async def run_scenarios(cases, chat, schema, repeats, **brain) -> list[dict]:
     records = []
     for case in cases:
         for rep in range(repeats):
             harness.new_isolated_db()
-            turns = await harness.run_conversation(case["turns"], chat, schema)
+            turns = await harness.run_conversation(case["turns"], chat, schema, **brain)
             results = checks.scenario_checks(case, turns)
             task = [c for c in results if not c.style]
             style = [c for c in results if c.style]
@@ -80,12 +80,12 @@ async def run_scenarios(cases, chat, schema, repeats) -> list[dict]:
     return records
 
 
-async def run_flows(cases, chat, schema, repeats) -> list[dict]:
+async def run_flows(cases, chat, schema, repeats, **brain) -> list[dict]:
     records = []
     for case in cases:
         for rep in range(repeats):
             db = harness.new_isolated_db()
-            turns = await harness.run_conversation(case["turns"], chat, schema)
+            turns = await harness.run_conversation(case["turns"], chat, schema, **brain)
             rows = harness.read_bookings(db)
             results = checks.booking_checks(case, turns, rows)
             task = [c for c in results if not c.style]
@@ -122,6 +122,9 @@ async def main_async(args) -> Path:
         "prompt_hash": hashlib.sha1(harness.GUIDANCE_SYSTEM_PROMPT.encode()).hexdigest()[:10],
     }
 
+    brain = {"grounding": not args.no_grounding, "guard": not args.no_guard}
+    meta["brain"] = brain  # what was switched on for this run (needed to read an ablation correctly)
+
     retr = scen_sum = flow_sum = None
     scen_rec: list[dict] = []
     flow_rec: list[dict] = []
@@ -142,12 +145,12 @@ async def main_async(args) -> Path:
 
         if args.suite in ("all", "scenarios"):
             cases = select(load_jsonl("scenarios.jsonl"), args.ids, args.limit)
-            scen_rec = await run_scenarios(cases, chat, schema, args.repeats)
+            scen_rec = await run_scenarios(cases, chat, schema, args.repeats, **brain)
             write_jsonl(out / "agent.jsonl", scen_rec)
             scen_sum = report.summarize_agent(scen_rec)
         if args.suite in ("all", "booking"):
             cases = select(load_jsonl("booking_flows.jsonl"), args.ids, args.limit)
-            flow_rec = await run_flows(cases, chat, schema, args.repeats)
+            flow_rec = await run_flows(cases, chat, schema, args.repeats, **brain)
             write_jsonl(out / "booking.jsonl", flow_rec)
             flow_sum = report.summarize_agent(flow_rec)
 
@@ -173,6 +176,8 @@ def main() -> None:
     p.add_argument("--k", type=int, default=4, help="retrieval cut-off (the tool returns 4)")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--ids", default=None, help="comma-separated case ids or categories")
+    p.add_argument("--no-grounding", action="store_true", help="ablation: no search before the model answers")
+    p.add_argument("--no-guard", action="store_true", help="ablation: speak the model's raw text")
     p.add_argument("--tag", default="run")
     p.add_argument("--out", default=str(RESULTS))
     args = p.parse_args()

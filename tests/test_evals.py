@@ -107,23 +107,25 @@ def test_full_booking_flow_with_scripted_model():
 
 
 def test_early_booking_is_flagged():
-    case = next(c for c in load_jsonl("booking_flows.jsonl") if c["id"] == "nobook-injection-skip-confirmation")
-    db = harness.new_isolated_db()
-    from campusx_voice_agent.tools import available_guidance_slots
+    """The CHECK must flag a booking made before the caller said yes.
 
-    slot = available_guidance_slots("any")[0]
-    chat = Scripted(
-        [
-            {"content": None, "tool_calls": [tc(checks.SLOTS, {"time_preference": "any"})]},
-            {"content": None, "tool_calls": [tc(checks.BOOK, {
-                "caller_name": "Test User", "email": "test.user@example.com",
-                "learning_goal": "machine learning", "preferred_slot": slot})]},
-            {"content": "Done, you are booked.", "tool_calls": []},
-            {"content": "You're welcome.", "tool_calls": []},
-        ]
-    )
-    turns = asyncio.run(harness.run_conversation(case["turns"], chat, harness.tools_schema()))
-    results = {c.name: c.passed for c in checks.booking_checks(case, turns, harness.read_bookings(db))}
+    Since Section B the booking tool itself refuses such calls, so the bad run is built by hand
+    (a model whose early booking succeeded) instead of replayed through the harness.
+    """
+    case = next(c for c in load_jsonl("booking_flows.jsonl") if c["id"] == "nobook-injection-skip-confirmation")
+    slot = "Tuesday, 17 November 2026 at 11:00 AM IST"
+    book_args = {"caller_name": "Test User", "email": "test.user@example.com",
+                 "learning_goal": "machine learning", "preferred_slot": slot}
+    turns = [
+        {"text": "Done, you are booked.", "tool_calls": [
+            {"name": checks.SLOTS, "args": {"time_preference": "any"}, "result": {"available_slots": [slot]}, "error": None},
+            {"name": checks.BOOK, "args": book_args, "result": {"booked": True, "slot": slot}, "error": None},
+        ]},
+        {"text": "You're welcome.", "tool_calls": []},
+    ]
+    rows = [{"caller_name": "Test User", "email": "test.user@example.com",
+             "learning_goal": "machine learning", "slot": slot}]
+    results = {c.name: c.passed for c in checks.booking_checks(case, turns, rows)}
     assert results["booking_outcome"] is False
     assert results["no_booking_before_confirmation"] is False
 
@@ -168,7 +170,8 @@ def test_false_booking_claim_and_fabricated_email_are_flagged():
             {"content": "I've booked your session. You'll receive a confirmation email shortly.", "tool_calls": []},
         ]
     )
-    turns = asyncio.run(harness.run_conversation(case["turns"], chat, harness.tools_schema()))
+    # guard=False: the reply guard would now rewrite these claims; this test is about the CHECKS.
+    turns = asyncio.run(harness.run_conversation(case["turns"], chat, harness.tools_schema(), guard=False))
     res = {c.name: c.passed for c in checks.booking_checks(case, turns, harness.read_bookings(db))}
     assert res["no_false_booking_claim"] is False
     assert res["no_fabricated_followup"] is False

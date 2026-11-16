@@ -17,6 +17,7 @@ from pipecat.services.ollama.llm import OLLamaLLMService
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.transports.base_transport import BaseTransport
 
+from campusx_voice_agent.grounding import KnowledgeContextProcessor
 from campusx_voice_agent.moss import make_moss_retrieval_processor
 from campusx_voice_agent.pipeline import (
     MetricsPrinter,
@@ -24,7 +25,8 @@ from campusx_voice_agent.pipeline import (
     make_user_turn_params,
     run_pipeline,
 )
-from campusx_voice_agent.tools import GUIDANCE_SYSTEM_PROMPT, GUIDANCE_TOOLS
+from campusx_voice_agent.reply_guard import ReplyGuard, ReplyGuardProcessor, booked_from_context
+from campusx_voice_agent.tools import ALLOWED_PHRASES, GUIDANCE_SYSTEM_PROMPT, GUIDANCE_TOOLS
 
 DEFAULT_OLLAMA_MODEL = "qwen2.5:7b"
 DEFAULT_WHISPER_MODEL = "small"
@@ -66,14 +68,32 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         context,
         user_params=make_user_turn_params(interruptions=True),
     )
-    moss_retrieval = await make_moss_retrieval_processor()
-
-    processors = [transport.input(), stt, user_aggregator]
-    if moss_retrieval is not None:
-        processors.append(moss_retrieval)
-    processors.extend(
-        [llm, tts, transport.output(), assistant_aggregator, MetricsPrinter()]
+    # Section B: retrieval happens in code before the model answers (Moss if configured, else the
+    # local knowledge base), and a guard filters every sentence before it reaches TTS.
+    retrieval = await make_moss_retrieval_processor()
+    if retrieval is None:
+        retrieval = KnowledgeContextProcessor(name="KnowledgeContext")
+    reply_guard = ReplyGuardProcessor(
+        ReplyGuard(
+            GUIDANCE_SYSTEM_PROMPT,
+            allowed_phrases=ALLOWED_PHRASES,
+            booked=booked_from_context(context),
+        ),
+        name="ReplyGuard",
     )
+
+    processors = [
+        transport.input(),
+        stt,
+        user_aggregator,
+        retrieval,
+        llm,
+        reply_guard,
+        tts,
+        transport.output(),
+        assistant_aggregator,
+        MetricsPrinter(),
+    ]
 
     await run_pipeline(transport, runner_args, processors, context=context, metrics=True)
 

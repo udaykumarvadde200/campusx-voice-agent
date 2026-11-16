@@ -1,4 +1,4 @@
-# Evals for the CampusX voice agent (baseline, days 1 to 3)
+# Evals for the CampusX voice agent (baseline days 1-3; Section B added day 4)
 
 These evals test the agent's *brain*: the real system prompt, the real tool schemas
 (built by Pipecat's own adapter) and the real tool code, driven by text. STT, TTS, VAD,
@@ -65,3 +65,19 @@ every retrieval label really exists in the source files.
 Day 4 fix what the baseline finds (forced retrieval, brevity), day 5 re-run and compare plus model
 comparisons, day 6 STT, day 7 latency and barge-in, day 8 robustness and injection, day 9 long
 sessions and resources, day 10 report.
+
+
+## Section B notes
+
+- The harness runs the SAME grounding, booking gate and reply guard as the live agent, so the numbers describe what a caller
+  hears. Each turn stores `raw_text` (model) and `text` (spoken), plus `guard` and `retrieval`. `summary.md` shows how many
+  turns the guard changed; a pass that needed the guard is a safety-net pass, not a model improvement.
+- Ablations: `--no-grounding` (no search before the answer) and `--no-guard` (speak raw model text). The booking gate is part of
+  the tool and has no switch.
+- `evals/heldout/retrieval_heldout.jsonl` (32 queries) was written blind before tuning retrieval. It is not in `datasets/`, so it does
+  not change the dataset hashes that `compare.py` checks. Score it with a small script or `retrieval_eval.run_retrieval`.
+- `checks.no_system_prompt_leak` compares replies with every prompt in `evals/known_prompts/` plus the live prompt. Keep old prompts
+  there when you rewrite the prompt, otherwise old runs stop being scorable.
+- Floor to beat: a model that always answers "I can't verify that" scores 29/56 on scenarios (0/25 on the answerable categories) and
+  5/12 on booking flows. Read category and check tables, not the overall percentage.
+- `tool_used` is satisfied by auto retrieval; it no longer measures whether the model chose to search.

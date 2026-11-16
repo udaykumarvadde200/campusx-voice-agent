@@ -25,7 +25,10 @@ if str(SRC_DIR) not in sys.path:
 from pipecat.adapters.services.open_ai_adapter import OpenAILLMAdapter  # noqa: E402
 from pipecat.processors.aggregators.llm_context import LLMContext  # noqa: E402
 
-from campusx_voice_agent.tools import GUIDANCE_SYSTEM_PROMPT, GUIDANCE_TOOLS  # noqa: E402
+from campusx_voice_agent.booking_gate import booking_confirmed_this_turn  # noqa: E402
+from campusx_voice_agent.grounding import inject_kb_context  # noqa: E402
+from campusx_voice_agent.reply_guard import ReplyGuard  # noqa: E402
+from campusx_voice_agent.tools import ALLOWED_PHRASES, GUIDANCE_SYSTEM_PROMPT, GUIDANCE_TOOLS  # noqa: E402
 
 ChatFn = Callable[[list[dict], list[dict]], Awaitable[dict]]
 
@@ -78,7 +81,7 @@ class ToolExecutor:
     def __init__(self) -> None:
         self.registry = {fn.__name__: fn for fn in GUIDANCE_TOOLS}
 
-    async def call(self, name: str, args: dict | None):
+    async def call(self, name: str, args: dict | None, messages: list[dict] | None = None):
         fn = self.registry.get(name)
         if fn is None:
             return None, f"unknown tool {name!r}"
@@ -90,7 +93,9 @@ class ToolExecutor:
             captured["result"] = result
 
         try:
-            await fn(SimpleNamespace(result_callback=result_callback), **args)
+            # Like Pipecat's FunctionCallParams: the booking gate reads the real transcript from it.
+            context = LLMContext(messages=list(messages or []))
+            await fn(SimpleNamespace(result_callback=result_callback, context=context), **args)
         except TypeError as exc:  # wrong/missing argument names
             return None, f"bad arguments: {exc}"
         except Exception as exc:  # noqa: BLE001 - any tool crash is a finding
@@ -99,23 +104,35 @@ class ToolExecutor:
 
 
 async def run_conversation(
-    user_turns: list[str], chat: ChatFn, schema: list[dict], max_rounds: int = 4
+    user_turns: list[str],
+    chat: ChatFn,
+    schema: list[dict],
+    max_rounds: int = 4,
+    *,
+    grounding: bool = True,
+    guard: bool = True,
 ) -> list[dict]:
+    """Run scripted caller turns through the brain exactly as the live pipeline wires it.
+
+    ``grounding``: search the knowledge base in code before the model answers (live: KnowledgeContextProcessor).
+    ``guard``: filter what the caller hears (live: ReplyGuardProcessor). Both default to the live setup;
+    turn them off only to measure what each one contributes.
+    """
     executor = ToolExecutor()
     messages: list[dict] = [{"role": "system", "content": GUIDANCE_SYSTEM_PROMPT}]
     turns: list[dict] = []
     for user_text in user_turns:
         messages.append({"role": "user", "content": user_text})
+        retrieval = inject_kb_context(messages) if grounding else None
         started = time.perf_counter()
         calls: list[dict] = []
-        text = ""
+        raw_text = ""
         rounds = 0
         for rounds in range(1, max_rounds + 1):
             msg = await chat(messages, schema)
             tool_calls = msg.get("tool_calls") or []
             if not tool_calls:
-                text = (msg.get("content") or "").strip()
-                messages.append({"role": "assistant", "content": text})
+                raw_text = (msg.get("content") or "").strip()
                 break
             messages.append(
                 {"role": "assistant", "content": msg.get("content") or "", "tool_calls": tool_calls}
@@ -129,22 +146,33 @@ async def run_conversation(
                         args = None
                 except (json.JSONDecodeError, TypeError, ValueError):
                     args = None
-                result, error = await executor.call(name, args)
+                result, error = await executor.call(name, args, messages)
                 calls.append({"name": name, "args": args, "result": result, "error": error})
                 payload = {"error": error} if error else result
                 messages.append(
                     {"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(payload, default=str)}
                 )
-        else:
-            messages.append({"role": "assistant", "content": text})
+
+        interventions: list[str] = []
+        text = raw_text
+        if guard:
+            booked = booking_confirmed_this_turn(messages)
+            reply_guard = ReplyGuard(GUIDANCE_SYSTEM_PROMPT, allowed_phrases=ALLOWED_PHRASES, booked=lambda: booked)
+            text = reply_guard.clean(raw_text)
+            interventions = list(reply_guard.interventions)
+        # The context keeps what was SPOKEN, like the live assistant aggregator does.
+        messages.append({"role": "assistant", "content": text})
         turns.append(
             {
                 "user": user_text,
                 "text": text,
+                "raw_text": raw_text,
+                "guard": interventions,
+                "retrieval": retrieval,
                 "tool_calls": calls,
                 "latency_s": round(time.perf_counter() - started, 3),
                 "rounds": rounds,
-                "hit_round_limit": rounds == max_rounds and not text,
+                "hit_round_limit": rounds == max_rounds and not raw_text,
             }
         )
     return turns

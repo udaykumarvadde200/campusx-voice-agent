@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 
 def pct(n: int, d: int) -> str:
@@ -58,6 +58,17 @@ def summarize_agent(records: list[dict]) -> dict:
     lat = [t["latency_s"] for r in records for t in r["turns"]]
     out["latency_s"] = {"p50": percentile(lat, 50), "p95": percentile(lat, 95), "max": round(max(lat), 2), "turns": len(lat)}
     out["round_limit_hits"] = sum(t.get("hit_round_limit", False) for r in records for t in r["turns"])
+
+    # Section B: how much of the result comes from the safety nets rather than the model itself.
+    turns = [t for r in records for t in r["turns"]]
+    out["guard_interventions"] = dict(Counter(i for t in turns for i in t.get("guard", [])))
+    lookups = [t["retrieval"] for t in turns if t.get("retrieval")]
+    out["auto_retrieval"] = {
+        "turns": len(turns),
+        "passages_attached": sum(bool(x.get("found")) for x in lookups),
+        "not_found_note": sum(x.get("injected") == "not_found" for x in lookups),
+    }
+    out["spoken_differs_from_raw"] = sum(1 for t in turns if t.get("raw_text") not in (None, t["text"]))
     return out
 
 
@@ -99,6 +110,12 @@ def render_markdown(meta: dict, scen: dict | None, flows: dict | None, retr: dic
         L.append(f"- Style pass (length, no markdown, no leaked tool JSON): {s['style_pass']['passed']}/{s['style_pass']['total']}")
         lat = s["latency_s"]
         L.append(f"- Brain latency per user turn (LLM + tools, no STT/TTS): p50 {lat['p50']} s, p95 {lat['p95']} s, max {lat['max']} s")
+        if "auto_retrieval" in s and s["auto_retrieval"]["turns"]:
+            ar = s["auto_retrieval"]
+            L.append(f"- Auto retrieval: passages attached on {ar['passages_attached']}/{ar['turns']} turns, "
+                     f"'nothing matched' note on {ar['not_found_note']}")
+            L.append(f"- Reply guard changed the spoken text on {s.get('spoken_differs_from_raw', 0)} turns: "
+                     f"{s.get('guard_interventions') or 'no interventions'}")
         if s.get("round_limit_hits"):
             L.append(f"- Turns that hit the tool-round limit with no reply: {s['round_limit_hits']}")
         L.append("\n| Category | Passed | Total | Rate |\n|---|---|---|---|")

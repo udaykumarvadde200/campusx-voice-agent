@@ -19,9 +19,12 @@ def _contains_all(text: str, keywords: list[str]) -> bool:
 def _section_has_keywords(kb_dir: Path, source: str, keywords: list[str]) -> tuple[bool, bool]:
     """(some section contains the keywords, and its returned snippet would keep them)."""
     text = (kb_dir / source).read_text(encoding="utf-8")
+    # "kept" now means: some retrievable chunk of that file holds all the keywords in its snippet.
+    chunks = kb._load_corpus(kb_dir).chunks
+    kept = any(c.source == source and _contains_all(c.snippet, keywords) for c in chunks)
     for section in kb._sections(text):
         if _contains_all(section, keywords):
-            return True, _contains_all(kb._compact(section), keywords)
+            return True, kept
     return False, False
 
 
