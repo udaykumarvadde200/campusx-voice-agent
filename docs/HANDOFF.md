@@ -14,7 +14,7 @@ data/knowledge_base/: campusx_august_schedule.md, dsa_python_course_full_curricu
 evals/: run_evals.py, harness.py, checks.py, retrieval_eval.py, report.py, compare.py, rescore.py, datasets/*.jsonl,
   heldout/retrieval_heldout.jsonl (32 queries written blind, see Section B), known_prompts/v0_baseline.txt (old prompt, for the leak check),
   baselines/qwen2.5-7b-baseline (raw) and qwen2.5-7b-baseline-rescored (current reference), README.md
-tests/test_evals.py (16) + tests/test_brain_fixes.py (63): 79 tests, all pass; fake models, no Ollama needed
+tests/test_evals.py (16) + tests/test_brain_fixes.py (66): 82 tests, all pass; fake models, no Ollama needed
 
 ## Commands (venv active, Ollama running, from local_proj)
 python main.py check | python main.py download-models | python main.py
@@ -203,6 +203,34 @@ Round 5 changes (NOT yet run on the real model):
   success (booking_outcome, stored_details_correct); readback_before_booking still looks at the scripted turn before the yes, so those flows
   can still fail that check. Report both numbers; never mix them with runs made without the flag.
 
+### Fifth real run (r5: round-5 changes; full suite + booking suite with --confirm-again, 1 repeat each; runs 20261121-133253 and -133702)
+| | r4 | r5 | r5 --confirm-again |
+|---|---|---|---|
+| Scenarios task pass | (r3: 54/56) | **55/56** (95% CI 0.91-1.00); kb_dsa 13/13, kb_schedule 9/9, injection 4/4 | - |
+| Booking flows task pass | 9/12 | 6/12 | 8/12 |
+| booking_outcome | 9/12 | 6/12 | 9/12 |
+| Latency p50 / max (booking) | 2.64 / 6.12 s | 2.12 / 7.06 s | 2.50 / 6.91 s |
+The reply guard caught a real prompt-leak attempt in scenarios (prompt_leak 1). Only unans-dsa-java fails in scenarios (accepted).
+Booking is noisy (12 flows, 1 repeat, temperature 0.3): 9/12, 6/12 and 8/12 are not clearly different. Findings from the failure texts:
+- book-spoken-email: the tools rejected "ravi dot kumar at example dot com" as an invalid email and the model asked the caller to spell it.
+  In the --confirm-again run the same flow booked correctly but still fails readback_before_booking (that check looks at the scripted turn).
+- A FALSE CLAIM WAS SPOKEN: "The session is booked for you, Arjun... Is this correct?" with no booking. Both the reply guard and the eval's own
+  no_false_booking_claim check were blind to this third-person wording, so no_false_booking_claim 12/12 overstated reality.
+- book-corrects-name-at-readback: the model says "I'll check the available times" but never calls the availability tool (fails in r3, r4,
+  r5 and r5-confirmagain); it then makes its own read-back with an invented slot, which the gate refuses. Real model limitation.
+- book-mid-flow-question / book-pick-by-time: the model makes its own read-back or confirmation without the code-written one, then needs one
+  more yes; stepwise and all-details-first sometimes stop at the slot list or the read-back.
+Round 6 changes (NOT yet run on the real model):
+- Spoken emails ("ravi dot kumar at example dot com") are converted to an address inside both booking tools (normalize_spoken_email).
+- While a booking is in progress (slots were offered), the reply guard also treats "the session/booking/appointment is booked|confirmed|
+  scheduled" and "booked for you" as a booking claim and replaces it unless a booking succeeded this turn. Outside a booking those words are
+  left alone (schedule talk). The eval's no_false_booking_claim check got the same wording; rescoring the committed baseline gives no verdict
+  changes. Mutation tests cover both.
+Assessment: scenario behaviour is now strong and stable; booking safety is solid (no wrong or false booking in any run since round 3, the DB
+was correct in every must-not-book flow) but booking COMPLETION depends on how well the model calls tools. The scaffolding is reaching the
+limit of qwen2.5:7b. Next lever is Section C: run the same suites on other models (e.g. qwen3:4b, llama3.2:3b, a larger 8B+ tool-calling model)
+and compare with compare.py, plus --repeats 3 on booking to separate noise from real failures.
+
 ### Still NOT measured (needs the laptop)
 The effect of the round-2 fixes, 3-repeat variance, other models, and live audio. Scenario latency did not suffer from the extra
 passage tokens (p50 1.21 s). Reference points for reading them: a stand-in model that ALWAYS says "I can't verify that" scores 29/56 on scenarios (0/25 on
@@ -224,7 +252,7 @@ Replies are not truncated in code; the length rule is prompt-only. The "One mome
 The live pipeline (guard + grounding inside real Pipecat with audio) is covered by processor tests but not yet run with a real call.
 
 ## NEXT: full-suite run of round 5 (regression check on scenarios) + booking suite with --confirm-again, then Section C (day 5)
-1. Commit Section B. 2. python -m pytest -q tests (79 pass). 3. Retrieval suite (seconds). 4. Full run with --repeats 1 (comparable to the
+1. Commit Section B. 2. python -m pytest -q tests (82 pass). 3. Retrieval suite (seconds). 4. Full run with --repeats 1 (comparable to the
 single-repeat baseline), then --repeats 3. 5. compare.py against evals/baselines/qwen2.5-7b-baseline-rescored. 6. Optional ablations:
 --no-grounding and --no-guard to see what each fix contributes. 7. 5-minute live call check (list in the Section B message). 8. Then
 compare llama3.2:3b and another 7-8B model on the same suites.

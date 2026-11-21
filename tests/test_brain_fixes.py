@@ -913,3 +913,55 @@ def test_confirm_again_is_bounded_and_cannot_book_without_the_models_own_booking
     assert (
         len(turns) <= 4 and rows == []
     )  # at most two simulated yes lines, and the gate never opens
+
+
+# ------------------------------------------------------------------------------ round 6: spoken emails, in-flow claims
+
+
+def test_a_spoken_email_is_understood_by_both_booking_tools():
+    """Fifth real run: 'ravi dot kumar at example dot com' was rejected and the model asked to spell it."""
+    from campusx_voice_agent.booking_gate import normalize_spoken_email
+
+    assert normalize_spoken_email("ravi dot kumar at example dot com") == EMAIL
+    assert normalize_spoken_email("Ravi.Kumar@Example.com ") == EMAIL
+    assert normalize_spoken_email("ravi at gmail") == "raviatgmail"  # still not an address
+    spoken = "ravi dot kumar at example dot com"
+    turns, rows = run(
+        CALLER,
+        call(checks.SLOTS, time_preference="any"),
+        say("Pick one."),
+        confirm_call(email=spoken),
+        say("ok"),
+        book_call(email=spoken),
+        say("You are booked."),
+    )
+    assert EMAIL in turns[1]["text"] and len(rows) == 1 and rows[0]["email"] == EMAIL
+
+
+def test_third_person_booking_claims_are_caught_only_while_a_booking_is_in_progress():
+    """Fifth real run: 'The session is booked for you, Arjun' was spoken with no booking behind it."""
+    claim = "The session is booked for you, Arjun, at 7 PM on Monday. Is this correct?"
+    in_flow = rg.ReplyGuard(
+        GUIDANCE_SYSTEM_PROMPT, allowed_phrases=ALLOWED_PHRASES, in_booking=lambda: True
+    )
+    assert rg.NOT_BOOKED in in_flow.clean(claim)
+    assert "false_booking_claim" in in_flow.interventions
+    done = rg.ReplyGuard(
+        GUIDANCE_SYSTEM_PROMPT,
+        allowed_phrases=ALLOWED_PHRASES,
+        booked=lambda: True,
+        in_booking=lambda: True,
+    )
+    assert done.clean(claim) == claim  # a real booking may be described
+    outside = "That session is confirmed for 28 August at 8 PM."
+    assert guard().clean(outside) == outside  # schedule talk outside a booking is untouched
+
+
+def test_the_eval_check_also_catches_the_third_person_claim():
+    case = next(c for c in load_jsonl("booking_flows.jsonl") if c["id"] == "book-pick-by-time")
+    claim = "The session is booked for you, Arjun, at 7 PM on Monday. Is this correct?"
+    turns = [
+        {"text": claim if i == 2 else "ok", "tool_calls": []} for i in range(len(case["turns"]))
+    ]
+    verdict = {c.name: c.passed for c in checks.booking_checks(case, turns, [])}
+    assert verdict["no_false_booking_claim"] is False

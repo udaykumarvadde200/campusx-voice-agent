@@ -27,6 +27,8 @@ BOOKED_CLAIM_RE = re.compile(
     r"(i('ve| have)\s+(successfully\s+)?booked|i\s+booked|you('re| are)\s+(all set|booked|confirmed)|"
     r"(has|have)\s+been\s+(booked|confirmed|scheduled)|booking\s+(is\s+)?(confirmed|complete|done)|"
     r"your\s+(free\s+)?(guidance\s+)?(session|booking)\s+(is|has been)\s+(booked|confirmed|scheduled)|"
+    r"(session|booking|appointment)\s+(is|has been|was)\s+(now\s+)?(booked|confirmed|scheduled)|"
+    r"booked\s+for\s+you|"
     r"successfully\s+(booked|scheduled))",
     re.IGNORECASE,
 )

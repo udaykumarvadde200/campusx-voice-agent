@@ -60,7 +60,7 @@ def _is_booking_state(message: Any) -> bool:
     )
 
 
-def _slots_were_offered(messages: list[Any]) -> bool:
+def slots_were_offered(messages: list[Any]) -> bool:
     return any(
         isinstance(m, dict) and m.get("role") == "tool" and "available_slots" in message_text(m)
         for m in messages

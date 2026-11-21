@@ -31,6 +31,7 @@ from campusx_voice_agent.reply_guard import (
     ReplyGuardProcessor,
     booked_from_context,
     forced_from_context,
+    in_booking_from_context,
 )
 from campusx_voice_agent.tools import ALLOWED_PHRASES, GUIDANCE_SYSTEM_PROMPT, GUIDANCE_TOOLS
 
@@ -84,6 +85,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             GUIDANCE_SYSTEM_PROMPT,
             allowed_phrases=ALLOWED_PHRASES,
             booked=booked_from_context(context),
+            in_booking=in_booking_from_context(context),
         ),
         forced=forced_from_context(context),
         name="ReplyGuard",

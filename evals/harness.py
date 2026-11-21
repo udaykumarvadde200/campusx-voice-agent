@@ -30,6 +30,7 @@ from campusx_voice_agent.booking_flow import (
     apply_booking_state,
     ever_booked,
     forced_readback,
+    slots_were_offered,
 )  # noqa: E402
 from campusx_voice_agent.booking_gate import booking_confirmed_this_turn  # noqa: E402
 from campusx_voice_agent.grounding import inject_kb_context  # noqa: E402
@@ -180,7 +181,12 @@ async def run_conversation(
         text = raw_text
         if guard:
             booked = booking_confirmed_this_turn(messages)
-            reply_guard = ReplyGuard(GUIDANCE_SYSTEM_PROMPT, allowed_phrases=ALLOWED_PHRASES, booked=lambda: booked)
+            reply_guard = ReplyGuard(
+                GUIDANCE_SYSTEM_PROMPT,
+                allowed_phrases=ALLOWED_PHRASES,
+                booked=lambda: booked,
+                in_booking=lambda: slots_were_offered(messages),
+            )
             text = reply_guard.clean(raw_text)
             interventions = list(reply_guard.interventions)
             readback = forced_readback(messages) if booking_state else None

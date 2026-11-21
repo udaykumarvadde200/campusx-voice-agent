@@ -16,6 +16,7 @@ from pipecat.services.llm_service import FunctionCallParams
 from campusx_voice_agent.booking_gate import (
     MAX_SLOTS_OFFERED,
     check_booking_allowed,
+    normalize_spoken_email,
     slot_was_offered,
 )
 from campusx_voice_agent.config import DATA_DIR
@@ -174,7 +175,7 @@ async def confirm_booking_details(
         preferred_slot: Exact slot returned by get_available_guidance_slots that the caller chose.
     """
     name = caller_name.strip()
-    normalized_email = email.strip().lower().replace(" ", "")
+    normalized_email = normalize_spoken_email(email)
     goal = learning_goal.strip()
     context = getattr(params, "context", None)
     messages = context.get_messages() if context is not None else []
@@ -223,7 +224,7 @@ async def book_free_guidance_session(
         preferred_slot: Exact slot returned by get_available_guidance_slots.
     """
     name = caller_name.strip()
-    normalized_email = email.strip().lower().replace(" ", "")
+    normalized_email = normalize_spoken_email(email)
     goal = learning_goal.strip()
     valid_slots = {label for _, label in _future_slots()}
 

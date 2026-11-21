@@ -26,7 +26,7 @@ from pipecat.frames.frames import (
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
-from campusx_voice_agent.booking_flow import forced_readback
+from campusx_voice_agent.booking_flow import forced_readback, slots_were_offered
 from campusx_voice_agent.booking_gate import booking_confirmed_this_turn
 from campusx_voice_agent.text_cleanup import ensure_terminal, strip_markdown_line
 
@@ -56,6 +56,13 @@ _BOOKED_CLAIM = re.compile(
 )
 # Deliberately NOT matched: "the AI Pulse session has been scheduled for 28 August" or
 # "that session is confirmed". Those describe the CampusX schedule, not the caller's booking.
+# While a booking is in progress ("the session is booked for you"). Not used outside one: the
+# same words describe the CampusX schedule ("that session is confirmed for 28 August").
+_BOOKED_CLAIM_IN_FLOW = re.compile(
+    r"((session|booking|appointment)\s+(is|has\s+been|was)\s+(now\s+)?(booked|confirmed|scheduled|reserved)|"
+    r"booked\s+for\s+you)",
+    re.IGNORECASE,
+)
 _FOLLOWUP_PROMISE = re.compile(
     r"((confirmation|reminder)\s+(e-?mail|message|sms|text)|"
     r"(will|'ll)\s+(receive|get)\s+(an?\s+)?(e-?mail|confirmation|reminder|call))",
@@ -90,9 +97,11 @@ class ReplyGuard:
         *,
         allowed_phrases: Iterable[str] = (),
         booked: Callable[[], bool] = lambda: False,
+        in_booking: Callable[[], bool] = lambda: False,
     ) -> None:
         self._shingles = build_shingles(prompt, allowed_phrases)
         self._booked = booked
+        self._in_booking = in_booking
         self._buffer = ""
         self._leaked = False
         self._said_not_booked = False
@@ -158,7 +167,10 @@ class ReplyGuard:
         if _FOLLOWUP_PROMISE.search(clean):
             self.interventions.append("fabricated_followup")
             return None
-        if _BOOKED_CLAIM.search(clean) and not self._booked():
+        claim = _BOOKED_CLAIM.search(clean) or (
+            self._in_booking() and _BOOKED_CLAIM_IN_FLOW.search(clean)
+        )
+        if claim and not self._booked():
             self.interventions.append("false_booking_claim")
             if self._said_not_booked:
                 return None
@@ -216,6 +228,11 @@ class ReplyGuardProcessor(FrameProcessor):
 def booked_from_context(context) -> Callable[[], bool]:
     """Live-pipeline helper: did a booking succeed after the caller's latest message?"""
     return lambda: booking_confirmed_this_turn(context.get_messages())
+
+
+def in_booking_from_context(context) -> Callable[[], bool]:
+    """Live-pipeline helper: has the caller been offered slots, i.e. is a booking in progress?"""
+    return lambda: slots_were_offered(context.get_messages())
 
 
 def forced_from_context(context) -> Callable[[], str | None]:

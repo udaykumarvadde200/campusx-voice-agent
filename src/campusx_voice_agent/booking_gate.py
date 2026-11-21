@@ -96,6 +96,14 @@ def is_explicit_yes(text: str) -> bool:
     return bool(_YES_START.match(cleaned)) and not _NOT_A_CLEAN_YES.search(cleaned)
 
 
+def normalize_spoken_email(text: str) -> str:
+    """Spoken email to address: 'ravi dot kumar at example dot com' -> 'ravi.kumar@example.com'.
+
+    An address that was typed (or already normalised) comes back unchanged.
+    """
+    return _normalized_spoken(text.strip())
+
+
 def _normalized_spoken(text: str) -> str:
     """Lowercase, undo spoken email words, and drop spaces so emails compare reliably."""
     low = text.lower()
