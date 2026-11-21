@@ -14,7 +14,7 @@ data/knowledge_base/: campusx_august_schedule.md, dsa_python_course_full_curricu
 evals/: run_evals.py, harness.py, checks.py, retrieval_eval.py, report.py, compare.py, rescore.py, datasets/*.jsonl,
   heldout/retrieval_heldout.jsonl (32 queries written blind, see Section B), known_prompts/v0_baseline.txt (old prompt, for the leak check),
   baselines/qwen2.5-7b-baseline (raw) and qwen2.5-7b-baseline-rescored (current reference), README.md
-tests/test_evals.py (16) + tests/test_brain_fixes.py (58): 74 tests, all pass; fake models, no Ollama needed
+tests/test_evals.py (16) + tests/test_brain_fixes.py (63): 79 tests, all pass; fake models, no Ollama needed
 
 ## Commands (venv active, Ollama running, from local_proj)
 python main.py check | python main.py download-models | python main.py
@@ -181,6 +181,28 @@ Round 4 changes (NOT yet run on the real model):
 Risks to check in r4: the model may call confirm_booking_details too early or with a wrong slot (see tool error rate); the extra tool round adds
 about one model call per booking; the model's text after the confirm call is discarded, so its wording there does not matter.
 
+### Fourth real run (r4: round-4 changes, booking suite only, 1 repeat, run 20261120-183014_sectionB-r4-booking)
+| Booking flows | r2 | r3 | r4 |
+|---|---|---|---|
+| Task pass | 4/12 | 4/12 | 9/12 (95% CI 0.47-0.91) |
+| Should-book flows that booked | 3/7 | 1/7 | 4/7 |
+| no_tool_rejections / no_invented_slots / offers_at_most_3_slots | 5/12 / - / - | 10/12 / 11/12 / 9/12 | 12/12 / 12/12 / 12/12 |
+| no_false_booking_claim / no_booking_before_confirmation | 12/12 / 6/12 | 12/12 / 12/12 | 12/12 / 12/12 |
+| Latency p50 / p95 / max | 4.97 / 7.15 / 12.5 s | 1.95 / 6.42 / 8.07 s | 2.64 / 6.10 / 6.12 s |
+The code-written read-back fired on 7 turns; every stored booking had the right details; no false booking claim was ever spoken.
+Remaining 3 failures: (1) book-corrects-name-at-readback: the model never called the availability tool and spoke "[Date1], [Date2], and
+[Date3]" (real model failure); (2) book-mid-flow-question and (3) book-pick-by-time end on the code-written read-back: the model waited for
+the caller's yes before calling confirm_booking_details (it asked "Shall I book it?" itself first), so the booking tool was still locked
+when the yes came, the code read the details back, and the scripted caller had no line left. A real caller says yes once more; the cost is a
+double yes, never a wrong booking. Style: style_max_3_sentences 5/12 (slot offers list three slots; the read-back itself is 3 sentences).
+Round 5 changes (NOT yet run on the real model):
+- Prompt: never ask "Shall I book it?" yourself; calling confirm_booking_details is how you ask.
+- Reply guard: spoken placeholders ("[Date1]", "{x}", "<x>") are replaced by "Let me check which times are free."
+- Eval: --confirm-again (default OFF, booking flows that should end in a booking only): after the scripted lines run out on a code-written
+  read-back with no booking, a simulated caller says "Yes, that's correct." (max twice, turn flagged simulated_user). It measures end-to-end
+  success (booking_outcome, stored_details_correct); readback_before_booking still looks at the scripted turn before the yes, so those flows
+  can still fail that check. Report both numbers; never mix them with runs made without the flag.
+
 ### Still NOT measured (needs the laptop)
 The effect of the round-2 fixes, 3-repeat variance, other models, and live audio. Scenario latency did not suffer from the extra
 passage tokens (p50 1.21 s). Reference points for reading them: a stand-in model that ALWAYS says "I can't verify that" scores 29/56 on scenarios (0/25 on
@@ -201,8 +223,8 @@ If the caller interrupts the read-back, the context holds only what was spoken, 
 Replies are not truncated in code; the length rule is prompt-only. The "One moment while I check that" line also plays for slot lookups.
 The live pipeline (guard + grounding inside real Pipecat with audio) is covered by processor tests but not yet run with a real call.
 
-## NEXT: measure round 4 (booking suite first), then Section C (day 5)
-1. Commit Section B. 2. python -m pytest -q tests (74 pass). 3. Retrieval suite (seconds). 4. Full run with --repeats 1 (comparable to the
+## NEXT: full-suite run of round 5 (regression check on scenarios) + booking suite with --confirm-again, then Section C (day 5)
+1. Commit Section B. 2. python -m pytest -q tests (79 pass). 3. Retrieval suite (seconds). 4. Full run with --repeats 1 (comparable to the
 single-repeat baseline), then --repeats 3. 5. compare.py against evals/baselines/qwen2.5-7b-baseline-rescored. 6. Optional ablations:
 --no-grounding and --no-guard to see what each fix contributes. 7. 5-minute live call check (list in the Section B message). 8. Then
 compare llama3.2:3b and another 7-8B model on the same suites.

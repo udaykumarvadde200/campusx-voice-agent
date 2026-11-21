@@ -842,3 +842,74 @@ def test_forced_readback_is_only_picked_up_from_the_current_turn():
         {"role": "tool", "tool_call_id": "a", "content": json.dumps(ready)}
     ]
     assert flow.forced_readback(fresh) == "Read this."
+
+
+# ------------------------------------------------------------------------------ round 5: placeholders, no self-asked confirm, confirm-again
+
+
+def test_spoken_placeholders_are_replaced():
+    """Fourth real run: the model said 'slots on [Date1], [Date2], and [Date3]' without calling the tool."""
+    g = guard()
+    out = g.clean(
+        "I see we have available slots on [Date1], [Date2], and [Date3]. Which one works best?"
+    )
+    assert out == f"{rg.NO_TIMES_YET} Which one works best?" and g.interventions == ["placeholder"]
+    assert guard().clean("Monday at 4 PM works.") == "Monday at 4 PM works."
+
+
+def test_prompt_tells_the_model_not_to_ask_shall_i_book_itself():
+    assert (
+        "never ask" in GUIDANCE_SYSTEM_PROMPT
+        and "confirm_booking_details" in GUIDANCE_SYSTEM_PROMPT
+    )
+
+
+def lazy_confirm_steps():
+    """The model asks 'Shall I book it?' itself at the slot choice and only calls confirm on the yes."""
+    return [
+        call(checks.SLOTS, time_preference="any"),
+        say("Here are three slots. Which one?"),
+        say("Shall I book that one?"),
+        confirm_call(),
+        say("ok"),
+        book_call(),
+        say("You are booked."),
+    ]
+
+
+def test_without_confirm_again_a_flow_that_ends_on_a_readback_does_not_book():
+    turns, rows = run(CALLER, *lazy_confirm_steps()[:5])
+    assert (
+        rows == []
+        and turns[2]["guard"] == ["forced_readback"]
+        and not any(t["simulated_user"] for t in turns)
+    )
+
+
+def test_confirm_again_simulates_the_second_yes_and_the_booking_completes():
+    turns, rows = run(CALLER, *lazy_confirm_steps(), confirm_again=True)
+    assert len(rows) == 1 and rows[0]["email"] == EMAIL
+    assert [t["simulated_user"] for t in turns] == [False, False, False, True]
+    assert turns[3]["user"] == harness.CONFIRM_AGAIN_TEXT
+
+
+def test_confirm_again_is_bounded_and_cannot_book_without_the_models_own_booking_call():
+    caller = [
+        "Book me a session. Ravi Kumar, ravi.kumar@example.com, data science.",
+        "The first one.",
+    ]
+    turns, rows = run(
+        caller,
+        call(checks.SLOTS, time_preference="any"),
+        say("Pick one."),
+        confirm_call(),
+        say("ok"),
+        confirm_call(),
+        say("ok"),
+        confirm_call(),
+        say("ok"),
+        confirm_again=True,
+    )
+    assert (
+        len(turns) <= 4 and rows == []
+    )  # at most two simulated yes lines, and the gate never opens

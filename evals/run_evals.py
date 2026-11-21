@@ -80,12 +80,18 @@ async def run_scenarios(cases, chat, schema, repeats, **brain) -> list[dict]:
     return records
 
 
-async def run_flows(cases, chat, schema, repeats, **brain) -> list[dict]:
+async def run_flows(cases, chat, schema, repeats, confirm_again=False, **brain) -> list[dict]:
     records = []
     for case in cases:
         for rep in range(repeats):
             db = harness.new_isolated_db()
-            turns = await harness.run_conversation(case["turns"], chat, schema, **brain)
+            turns = await harness.run_conversation(
+                case["turns"],
+                chat,
+                schema,
+                confirm_again=confirm_again and bool(case.get("expect_booking")),
+                **brain,
+            )
             rows = harness.read_bookings(db)
             results = checks.booking_checks(case, turns, rows)
             task = [c for c in results if not c.style]
@@ -127,7 +133,7 @@ async def main_async(args) -> Path:
         "guard": not args.no_guard,
         "booking_state": not args.no_booking_state,
     }
-    meta["brain"] = brain  # what was switched on for this run (needed to read an ablation correctly)
+    meta["brain"] = {**brain, "confirm_again": args.confirm_again}  # what was switched on for this run (needed to read an ablation correctly)
 
     retr = scen_sum = flow_sum = None
     scen_rec: list[dict] = []
@@ -154,7 +160,9 @@ async def main_async(args) -> Path:
             scen_sum = report.summarize_agent(scen_rec)
         if args.suite in ("all", "booking"):
             cases = select(load_jsonl("booking_flows.jsonl"), args.ids, args.limit)
-            flow_rec = await run_flows(cases, chat, schema, args.repeats, **brain)
+            flow_rec = await run_flows(
+                cases, chat, schema, args.repeats, confirm_again=args.confirm_again, **brain
+            )
             write_jsonl(out / "booking.jsonl", flow_rec)
             flow_sum = report.summarize_agent(flow_rec)
 
@@ -182,6 +190,11 @@ def main() -> None:
     p.add_argument("--ids", default=None, help="comma-separated case ids or categories")
     p.add_argument("--no-grounding", action="store_true", help="ablation: no search before the model answers")
     p.add_argument("--no-guard", action="store_true", help="ablation: speak the model's raw text")
+    p.add_argument(
+        "--confirm-again",
+        action="store_true",
+        help="booking flows: a simulated caller says yes again after a code-written read-back",
+    )
     p.add_argument("--no-booking-state", action="store_true", help="ablation: always offer the booking tool")
     p.add_argument("--tag", default="run")
     p.add_argument("--out", default=str(RESULTS))

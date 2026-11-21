@@ -67,7 +67,7 @@ def _slots_were_offered(messages: list[Any]) -> bool:
     )
 
 
-def _ever_booked(messages: list[Any]) -> bool:
+def ever_booked(messages: list[Any]) -> bool:
     return any(
         isinstance(m, dict)
         and m.get("role") == "tool"
@@ -125,7 +125,7 @@ def forced_readback(messages: list[Any] | None) -> str | None:
 def apply_booking_state(messages: list[Any]) -> dict[str, Any]:
     """Refresh the booking note in ``messages`` (in place); say which booking tools are offered."""
     messages[:] = [m for m in messages if not _is_booking_state(m)]
-    done = _ever_booked(messages) or booking_confirmed_this_turn(messages)
+    done = ever_booked(messages) or booking_confirmed_this_turn(messages)
     unlocked = booking_tool_unlocked(messages) and not done
     confirm_visible = _caller_replied_after_slots(messages) and not done
     hint = not unlocked and confirm_visible

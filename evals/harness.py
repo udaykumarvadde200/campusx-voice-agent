@@ -25,7 +25,12 @@ if str(SRC_DIR) not in sys.path:
 from pipecat.adapters.services.open_ai_adapter import OpenAILLMAdapter  # noqa: E402
 from pipecat.processors.aggregators.llm_context import LLMContext  # noqa: E402
 
-from campusx_voice_agent.booking_flow import allowed_tool_names, apply_booking_state, forced_readback  # noqa: E402
+from campusx_voice_agent.booking_flow import (
+    allowed_tool_names,
+    apply_booking_state,
+    ever_booked,
+    forced_readback,
+)  # noqa: E402
 from campusx_voice_agent.booking_gate import booking_confirmed_this_turn  # noqa: E402
 from campusx_voice_agent.grounding import inject_kb_context  # noqa: E402
 from campusx_voice_agent.reply_guard import ReplyGuard  # noqa: E402
@@ -104,6 +109,9 @@ class ToolExecutor:
         return captured.get("result"), None
 
 
+CONFIRM_AGAIN_TEXT = "Yes, that's correct."
+
+
 async def run_conversation(
     user_turns: list[str],
     chat: ChatFn,
@@ -113,18 +121,25 @@ async def run_conversation(
     grounding: bool = True,
     guard: bool = True,
     booking_state: bool = True,
+    confirm_again: bool = False,
 ) -> list[dict]:
     """Run scripted caller turns through the brain exactly as the live pipeline wires it.
 
     ``grounding``: search the knowledge base in code before the model answers (live: KnowledgeContextProcessor).
     ``guard``: filter what the caller hears (live: ReplyGuardProcessor).
-    ``booking_state``: hide the booking tool until read-back + yes (live: BookingStateProcessor). All default to the live setup;
+    ``booking_state``: hide the booking tool until read-back + yes (live: BookingStateProcessor).
+    ``confirm_again``: a simulated caller who, after the scripted lines run out on a code-written read-back
+    without a booking, answers \"Yes, that's correct.\" (at most twice). Opt in, and only for flows that
+    should end in a booking; it measures end-to-end success, not first-try behaviour. The first three default to the live setup;
     turn them off only to measure what each one contributes.
     """
     executor = ToolExecutor()
     messages: list[dict] = [{"role": "system", "content": GUIDANCE_SYSTEM_PROMPT}]
     turns: list[dict] = []
-    for user_text in user_turns:
+    pending = [(text, False) for text in user_turns]
+    simulated = 0
+    while pending:
+        user_text, is_simulated = pending.pop(0)
         messages.append({"role": "user", "content": user_text})
         retrieval = inject_kb_context(messages) if grounding else None
         offered = schema
@@ -186,8 +201,18 @@ async def run_conversation(
                 "latency_s": round(time.perf_counter() - started, 3),
                 "rounds": rounds,
                 "hit_round_limit": rounds == max_rounds and not raw_text,
+                "simulated_user": is_simulated,
             }
         )
+        if (
+            confirm_again
+            and not pending
+            and simulated < 2
+            and "forced_readback" in interventions
+            and not ever_booked(messages)
+        ):
+            pending.append((CONFIRM_AGAIN_TEXT, True))
+            simulated += 1
     return turns
 
 

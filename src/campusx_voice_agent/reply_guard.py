@@ -61,6 +61,8 @@ _FOLLOWUP_PROMISE = re.compile(
     r"(will|'ll)\s+(receive|get)\s+(an?\s+)?(e-?mail|confirmation|reminder|call))",
     re.IGNORECASE,
 )
+_PLACEHOLDER = re.compile(r"\[[^\]\n]{1,40}\]|\{[^}\n]{1,40}\}|<[A-Za-z][^>\n]{0,40}>")
+NO_TIMES_YET = "Let me check which times are free."
 _BOUNDARY = re.compile(r"(?<=[.!?])\s+|\n+")
 
 
@@ -150,6 +152,9 @@ class ReplyGuard:
             self.interventions.append("markdown")
         if not clean:
             return None
+        if _PLACEHOLDER.search(clean):  # e.g. "slots on [Date1], [Date2]": never speak a template
+            self.interventions.append("placeholder")
+            return NO_TIMES_YET
         if _FOLLOWUP_PROMISE.search(clean):
             self.interventions.append("fabricated_followup")
             return None
