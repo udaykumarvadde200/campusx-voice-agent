@@ -59,7 +59,8 @@ def format_found(result: dict[str, Any]) -> str:
         "State CampusX facts only from these:",
     ]
     for i, item in enumerate(result["results"][:MAX_PASSAGES], start=1):
-        lines.append(f"{i}. {item['snippet']} (source: {item['source']})")
+        snippet = item["snippet"].replace("**", "").replace("__", "").replace("`", "")
+        lines.append(f"{i}. {snippet} (source: {item['source']})")
     unmatched = result.get("unmatched_terms") or []
     if unmatched:
         lines.append(

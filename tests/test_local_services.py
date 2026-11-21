@@ -35,5 +35,6 @@ def test_whisper_settings_and_pipeline_builds():
     assert [t.__name__ for t in GUIDANCE_TOOLS] == [
         "search_campusx_knowledge_base",
         "get_available_guidance_slots",
+        "confirm_booking_details",
         "book_free_guidance_session",
     ]

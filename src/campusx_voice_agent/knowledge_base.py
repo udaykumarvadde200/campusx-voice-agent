@@ -159,6 +159,7 @@ STOPWORDS = frozenset(
     available talk mention discuss
     anything something everything anyone someone everyone else other another one ones
     suitable good great useful helpful right best worth fit mean means meaning
+    happen happens happening completely totally entirely
     """.split()
 )
 
@@ -218,7 +219,7 @@ def _stem(word: str) -> str:
         word = word[:-3] + "y"
     elif word.endswith("sses"):
         word = word[:-2]
-    elif word.endswith("s") and not word.endswith(("ss", "us", "is")):
+    elif word.endswith("s") and not word.endswith(("ss", "us", "is", "ews")):  # "news" != "new"
         word = word[:-1]
     for suffix in ("ing", "ed"):
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:

@@ -25,6 +25,7 @@ if str(SRC_DIR) not in sys.path:
 from pipecat.adapters.services.open_ai_adapter import OpenAILLMAdapter  # noqa: E402
 from pipecat.processors.aggregators.llm_context import LLMContext  # noqa: E402
 
+from campusx_voice_agent.booking_flow import allowed_tool_names, apply_booking_state, forced_readback  # noqa: E402
 from campusx_voice_agent.booking_gate import booking_confirmed_this_turn  # noqa: E402
 from campusx_voice_agent.grounding import inject_kb_context  # noqa: E402
 from campusx_voice_agent.reply_guard import ReplyGuard  # noqa: E402
@@ -111,11 +112,13 @@ async def run_conversation(
     *,
     grounding: bool = True,
     guard: bool = True,
+    booking_state: bool = True,
 ) -> list[dict]:
     """Run scripted caller turns through the brain exactly as the live pipeline wires it.
 
     ``grounding``: search the knowledge base in code before the model answers (live: KnowledgeContextProcessor).
-    ``guard``: filter what the caller hears (live: ReplyGuardProcessor). Both default to the live setup;
+    ``guard``: filter what the caller hears (live: ReplyGuardProcessor).
+    ``booking_state``: hide the booking tool until read-back + yes (live: BookingStateProcessor). All default to the live setup;
     turn them off only to measure what each one contributes.
     """
     executor = ToolExecutor()
@@ -124,12 +127,17 @@ async def run_conversation(
     for user_text in user_turns:
         messages.append({"role": "user", "content": user_text})
         retrieval = inject_kb_context(messages) if grounding else None
+        offered = schema
+        if booking_state:
+            state = apply_booking_state(messages)
+            names = allowed_tool_names([t["function"]["name"] for t in schema], state)
+            offered = [t for t in schema if t["function"]["name"] in names]
         started = time.perf_counter()
         calls: list[dict] = []
         raw_text = ""
         rounds = 0
         for rounds in range(1, max_rounds + 1):
-            msg = await chat(messages, schema)
+            msg = await chat(messages, offered)
             tool_calls = msg.get("tool_calls") or []
             if not tool_calls:
                 raw_text = (msg.get("content") or "").strip()
@@ -160,6 +168,10 @@ async def run_conversation(
             reply_guard = ReplyGuard(GUIDANCE_SYSTEM_PROMPT, allowed_phrases=ALLOWED_PHRASES, booked=lambda: booked)
             text = reply_guard.clean(raw_text)
             interventions = list(reply_guard.interventions)
+            readback = forced_readback(messages) if booking_state else None
+            if readback:  # live: ReplyGuardProcessor speaks the code-written read-back instead
+                text = readback
+                interventions.append("forced_readback")
         # The context keeps what was SPOKEN, like the live assistant aggregator does.
         messages.append({"role": "assistant", "content": text})
         turns.append(
@@ -169,6 +181,7 @@ async def run_conversation(
                 "raw_text": raw_text,
                 "guard": interventions,
                 "retrieval": retrieval,
+                "tools_offered": [t["function"]["name"] for t in offered],
                 "tool_calls": calls,
                 "latency_s": round(time.perf_counter() - started, 3),
                 "rounds": rounds,

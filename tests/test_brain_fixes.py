@@ -66,14 +66,8 @@ def call(name, **args):
     return {"content": None, "tool_calls": [tc(name, args)]}
 
 
-def book_call(name=NAME, email=EMAIL, slot=SLOT):
-    return call(
-        checks.BOOK,
-        caller_name=name,
-        email=email,
-        learning_goal="data science",
-        preferred_slot=slot,
-    )
+def book_call(name=NAME, email=EMAIL, slot=SLOT, goal="data science"):
+    return call(checks.BOOK, caller_name=name, email=email, learning_goal=goal, preferred_slot=slot)
 
 
 def run(user_turns, *steps, **kw):
@@ -514,3 +508,337 @@ def test_knowledge_context_processor_attaches_passages_to_the_llm_context():
     )
     attached = [m for m in ctx.get_messages() if grounding._is_kb_message(m)]
     assert len(attached) == 1 and "LeetCode" in attached[0]["content"]
+
+
+# ------------------------------------------------------------------------------ round 2 (found by the first real run)
+
+
+def test_schedule_talk_is_not_mistaken_for_a_booking_claim():
+    """First real run: 'has been scheduled for 28 August' was rewritten to 'I haven't booked anything'."""
+    for text in (
+        "The AI Pulse session has been scheduled for Friday, 28 August.",
+        "That session is scheduled for 28 August at 8 PM.",
+        "The news roundup is confirmed for 7 August.",
+    ):
+        assert guard().clean(text) == text
+    assert guard().clean("Your session is booked for Tuesday.") == rg.NOT_BOOKED  # still caught
+
+
+def test_refusing_with_the_policy_wording_is_not_a_leak():
+    """First real run: a correct 'I can't promise a job...' refusal was replaced by the leak refusal."""
+    reply = "I can't promise a job, placement, salary, discount or coupon code, refund, or private community link."
+    assert guard().clean(reply) == reply
+    assert (
+        guard().clean(GUIDANCE_SYSTEM_PROMPT[:300]) == rg.LEAK_REFUSAL
+    )  # a real dump is still caught
+
+
+def test_filler_words_do_not_make_the_knowledge_base_abstain():
+    """First real run: 'happening' and 'completely' were treated as facts missing from the KB."""
+    assert kb.search_knowledge_base("What is happening on 4 August?")["found"]
+    assert (
+        kb.search_knowledge_base("how much does the course cost")["found"] is False
+    )  # still abstains
+
+
+def test_news_is_not_the_plural_of_new():
+    """Second real run: 'new to DSA' retrieved the 'AI Pulse - News Roundup' rows (stem collision)."""
+    assert kb._stem("news") != kb._stem("new") and kb._stem("graphs") == kb._stem("graph")
+    result = kb.search_knowledge_base("Is the DSA course good for someone completely new to DSA?")
+    assert all("News Roundup" not in r["snippet"] for r in result["results"])
+
+
+# ------------------------------------------------------------------------------ round 3: booking tool shown only when allowed
+
+from campusx_voice_agent import booking_flow as flow  # noqa: E402
+
+BOOK = flow.BOOKING_TOOL
+
+
+class Recording(Script):
+    """Script that also remembers which tools the model was shown on each call."""
+
+    def __init__(self, *steps):
+        super().__init__(*steps)
+        self.offered = []
+
+    async def __call__(self, messages, tools):
+        self.offered.append([t["function"]["name"] for t in tools])
+        return await super().__call__(messages, tools)
+
+
+def msgs(*pairs):
+    return [{"role": r, "content": c} for r, c in pairs]
+
+
+def test_booking_tool_unlocks_only_after_a_readback_with_email_and_a_clear_yes():
+    readback = f"{NAME}, {EMAIL}, data science, {SLOT}. Shall I book it? Please say yes or no."
+    assert flow.booking_tool_unlocked(
+        msgs(("assistant", readback), ("user", "Yes, that's correct."))
+    )
+    assert not flow.booking_tool_unlocked(msgs(("assistant", readback), ("user", "The first one.")))
+    assert not flow.booking_tool_unlocked(msgs(("assistant", readback), ("user", "ok")))
+    no_email = f"{NAME}, data science, {SLOT}. Shall I book it? Please say yes or no."
+    assert not flow.booking_tool_unlocked(msgs(("assistant", no_email), ("user", "Yes.")))
+    assert not flow.booking_tool_unlocked(
+        msgs(("assistant", f"{NAME} {EMAIL} {SLOT}."), ("user", "Yes."))
+    )  # no question
+    spoken = "Ravi Kumar, ravi dot kumar at example dot com, Tuesday at 4 PM. Is that right?"
+    assert flow.booking_tool_unlocked(msgs(("assistant", spoken), ("user", "Yes.")))
+
+
+def test_the_model_is_never_shown_the_booking_tool_before_the_readback_and_yes():
+    model = Recording(*good_flow_steps())
+    db = harness.new_isolated_db()
+    turns = asyncio.run(
+        harness.run_conversation(
+            [
+                "Book me a session. Ravi Kumar, ravi.kumar@example.com, data science.",
+                "The first one.",
+                "Yes, that's correct.",
+            ],
+            model,
+            harness.tools_schema(),
+        )
+    )
+    assert len(harness.read_bookings(db)) == 1
+    by_turn = [t["tools_offered"] for t in turns]
+    assert BOOK not in by_turn[0] and BOOK not in by_turn[1] and BOOK in by_turn[2]
+    # model calls 0-2 (details, slot choice) are locked; calls 3-4 happen on the caller's yes
+    assert all(BOOK not in names for names in model.offered[:3])
+    assert all(BOOK in names for names in model.offered[3:])
+
+
+def test_a_hallucinated_call_to_the_hidden_tool_is_still_refused_by_the_gate():
+    turns, rows = run(
+        ["Book now. Ravi Kumar, ravi.kumar@example.com."],
+        call(checks.SLOTS, time_preference="any"),
+        book_call(),
+        say("Done."),
+    )
+    assert rows == [] and BOOK not in turns[0]["tools_offered"]
+    assert turns[0]["tool_calls"][1]["result"]["reason"] == "no_explicit_yes"
+
+
+def test_locked_note_appears_after_slots_are_offered_and_is_replaced_not_stacked():
+    offered = [
+        {"role": "tool", "tool_call_id": "c0", "content": json.dumps({"available_slots": [SLOT]})}
+    ]
+    before = msgs(("user", "Book me a session."))
+    assert flow.apply_booking_state(before)["hint"] is False  # nothing offered yet: no nagging
+    convo = (
+        msgs(("user", "Book me a session."))
+        + offered
+        + msgs(("assistant", "Which slot?"), ("user", "The first one."))
+    )
+    flow.apply_booking_state(convo)
+    flow.apply_booking_state(convo)
+    notes = [m for m in convo if flow._is_booking_state(m)]
+    assert len(notes) == 1 and "locked" in notes[0]["content"]
+    done = convo + [{"role": "tool", "tool_call_id": "c1", "content": json.dumps({"booked": True})}]
+    assert flow.apply_booking_state(done)["hint"] is False  # a finished booking is not nagged about
+
+
+def test_booking_state_processor_sets_the_tools_on_the_llm_context():
+    from pipecat.frames.frames import LLMContextFrame
+    from pipecat.processors.aggregators.llm_context import LLMContext
+    from pipecat.tests.utils import run_test
+
+    from campusx_voice_agent.tools import GUIDANCE_TOOLS
+
+    def names(ctx):
+        return (
+            [getattr(t, "__name__", None) for t in ctx.tools]
+            if isinstance(ctx.tools, list)
+            else [t.name for t in ctx.tools.standard_tools]
+        )
+
+    locked = LLMContext(messages=msgs(("user", "Book me a session.")), tools=GUIDANCE_TOOLS)
+    asyncio.run(
+        run_test(
+            flow.BookingStateProcessor(GUIDANCE_TOOLS), frames_to_send=[LLMContextFrame(locked)]
+        )
+    )
+    assert BOOK not in names(locked) and len(names(locked)) == 2
+    readback = f"{NAME}, {EMAIL}, {SLOT}. Shall I book it? Please say yes or no."
+    open_ = LLMContext(
+        messages=msgs(("assistant", readback), ("user", "Yes.")), tools=GUIDANCE_TOOLS
+    )
+    asyncio.run(
+        run_test(
+            flow.BookingStateProcessor(GUIDANCE_TOOLS), frames_to_send=[LLMContextFrame(open_)]
+        )
+    )
+    assert BOOK in names(open_) and len(names(open_)) == 3
+
+
+# ------------------------------------------------------------------------------ round 4: the read-back is written by code
+
+from campusx_voice_agent.tools import readback_sentence  # noqa: E402
+
+CONFIRM = flow.CONFIRM_TOOL
+
+
+def confirm_call(name=NAME, email=EMAIL, goal="data science", slot=SLOT):
+    return call(CONFIRM, caller_name=name, email=email, learning_goal=goal, preferred_slot=slot)
+
+
+CALLER = [
+    "Book me a session. Ravi Kumar, ravi.kumar@example.com, data science.",
+    "The first one.",
+    "Yes, that's correct.",
+]
+
+
+def test_the_caller_hears_the_code_written_readback_even_if_the_model_is_lazy():
+    """Third real run: the 7B model left the email out of its own read-back in 6 of 7 flows."""
+    model = Recording(
+        call(checks.SLOTS, time_preference="any"),
+        say("Here are three slots. Which one?"),
+        confirm_call(),
+        say("Great, one moment!"),  # the model says nothing useful
+        book_call(),
+        say("Your session is booked."),
+    )
+    db = harness.new_isolated_db()
+    turns = asyncio.run(harness.run_conversation(CALLER, model, harness.tools_schema()))
+    rows = harness.read_bookings(db)
+    expected = readback_sentence(NAME, EMAIL, "data science", SLOT)
+    assert turns[1]["text"] == expected and "forced_readback" in turns[1]["guard"]
+    assert (
+        NAME in expected
+        and EMAIL in expected
+        and SLOT in expected
+        and "Shall I book it?" in expected
+    )
+    assert len(rows) == 1 and rows[0]["email"] == EMAIL and rows[0]["caller_name"] == NAME
+    offered = [t["tools_offered"] for t in turns]
+    assert CONFIRM not in offered[0] and CONFIRM in offered[1] and BOOK not in offered[1]
+    assert BOOK in offered[2]
+
+
+def test_the_readback_passes_the_eval_check_and_the_gate_without_help_from_the_model():
+    case = next(c for c in load_jsonl("booking_flows.jsonl") if c["id"] == "book-stepwise")
+    pm = available_guidance_slots("afternoon")[0]
+    who = dict(name="Ananya Rao", email="ananya.rao@example.com", goal="generative AI")
+    turns, rows = run(
+        case["turns"],
+        say("Sure, what is your name?"),
+        say("And your email?"),
+        say("And your goal?"),
+        say("Preferred time?"),
+        call(checks.SLOTS, time_preference="afternoon"),
+        say("Here are the slots."),
+        confirm_call(**who, slot=pm),
+        say("ok"),
+        book_call(name=who["name"], email=who["email"], slot=pm, goal=who["goal"]),
+        say("Booked."),
+    )
+    assert len(rows) == 1
+    verdict = {c.name: c.passed for c in checks.booking_checks(case, turns, rows)}
+    assert verdict["readback_before_booking"] and verdict["no_booking_before_confirmation"]
+    assert verdict["booking_outcome"] and verdict["stored_details_correct"]
+
+
+def test_confirm_tool_coaches_the_model_when_it_skipped_the_availability_lookup():
+    """Third real run: in book-stepwise the model invented slots and never called the availability tool."""
+    # The tool is hidden until slots were offered, so force the call by hand (a hallucinated call).
+    turns, _ = run(["Book me a session."], confirm_call(), say("ok"))
+    result = turns[0]["tool_calls"][0]["result"]
+    assert result["ready"] is False and "get_available_guidance_slots" in result["next_step"]
+    assert turns[0]["text"] == "ok." and "forced_readback" not in turns[0]["guard"]
+
+
+def test_confirm_tool_rejects_bad_details():
+    for kw, reason in (
+        (dict(email="ravi at gmail"), "email"),
+        (dict(name="R"), "name"),
+        (dict(goal="x"), "goal"),
+    ):
+        turns, _ = run(
+            CALLER[:2],
+            call(checks.SLOTS, time_preference="any"),
+            say("Pick one."),
+            confirm_call(**kw),
+            say("Sorry, let me check that."),
+        )
+        result = turns[1]["tool_calls"][0]["result"]
+        assert result["ready"] is False and reason in result["error"].lower(), kw
+        assert turns[1]["text"] == "Sorry, let me check that."
+
+
+def test_a_repeated_yes_does_not_turn_a_finished_booking_into_a_slot_taken_error():
+    """Third real run: a second booking call got 'That slot was just booked' and the model told the caller
+    the slot was unavailable, although THEIR booking had just succeeded."""
+    turns, rows = run(
+        CALLER,
+        call(checks.SLOTS, time_preference="any"),
+        say("Pick one."),
+        confirm_call(),
+        say("ok"),
+        book_call(),
+        book_call(),
+        say("You are booked."),
+    )
+    first, second = turns[2]["tool_calls"][0]["result"], turns[2]["tool_calls"][1]["result"]
+    assert (
+        first["booked"] is True
+        and second["booked"] is True
+        and second.get("already_booked") is True
+    )
+    assert first["booking_id"] == second["booking_id"] and len(rows) == 1
+
+
+def test_no_tools_are_offered_to_book_again_after_a_successful_booking():
+    done = (
+        msgs(("user", "Book me a session."))
+        + [
+            {
+                "role": "tool",
+                "tool_call_id": "c0",
+                "content": json.dumps({"available_slots": [SLOT]}),
+            },
+        ]
+        + msgs(("user", "The first one."))
+        + [
+            {"role": "tool", "tool_call_id": "c1", "content": json.dumps({"booked": True})},
+        ]
+        + msgs(("assistant", "Booked."), ("user", "Thanks!"))
+    )
+    state = flow.apply_booking_state(done)
+    assert state == {"unlocked": False, "confirm_visible": False, "hint": False}
+
+
+def test_reply_guard_processor_speaks_the_forced_readback_and_nothing_the_model_said():
+    from pipecat.frames.frames import (
+        LLMFullResponseEndFrame,
+        LLMFullResponseStartFrame,
+        LLMTextFrame,
+    )
+    from pipecat.tests.utils import run_test
+
+    sentence = readback_sentence(NAME, EMAIL, "data science", SLOT)
+    frames = [
+        LLMFullResponseStartFrame(),
+        LLMTextFrame(text="Sure! Details are: "),
+        LLMTextFrame(text="whatever."),
+        LLMFullResponseEndFrame(),
+    ]
+    proc = rg.ReplyGuardProcessor(guard(), forced=lambda: sentence)
+    down, _ = asyncio.run(run_test(proc, frames_to_send=frames))
+    spoken = "".join(f.text for f in down if isinstance(f, LLMTextFrame)).strip()
+    assert spoken == sentence and isinstance(down[-1], LLMFullResponseEndFrame)
+
+
+def test_forced_readback_is_only_picked_up_from_the_current_turn():
+    ready = {"ready": True, "say_exactly": "Read this."}
+    old = (
+        msgs(("user", "pick"))
+        + [{"role": "tool", "tool_call_id": "a", "content": json.dumps(ready)}]
+        + msgs(("assistant", "Read this."), ("user", "Yes."))
+    )
+    assert flow.forced_readback(old) is None
+    fresh = msgs(("user", "pick")) + [
+        {"role": "tool", "tool_call_id": "a", "content": json.dumps(ready)}
+    ]
+    assert flow.forced_readback(fresh) == "Read this."

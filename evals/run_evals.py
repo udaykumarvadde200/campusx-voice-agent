@@ -122,7 +122,11 @@ async def main_async(args) -> Path:
         "prompt_hash": hashlib.sha1(harness.GUIDANCE_SYSTEM_PROMPT.encode()).hexdigest()[:10],
     }
 
-    brain = {"grounding": not args.no_grounding, "guard": not args.no_guard}
+    brain = {
+        "grounding": not args.no_grounding,
+        "guard": not args.no_guard,
+        "booking_state": not args.no_booking_state,
+    }
     meta["brain"] = brain  # what was switched on for this run (needed to read an ablation correctly)
 
     retr = scen_sum = flow_sum = None
@@ -178,6 +182,7 @@ def main() -> None:
     p.add_argument("--ids", default=None, help="comma-separated case ids or categories")
     p.add_argument("--no-grounding", action="store_true", help="ablation: no search before the model answers")
     p.add_argument("--no-guard", action="store_true", help="ablation: speak the model's raw text")
+    p.add_argument("--no-booking-state", action="store_true", help="ablation: always offer the booking tool")
     p.add_argument("--tag", default="run")
     p.add_argument("--out", default=str(RESULTS))
     args = p.parse_args()

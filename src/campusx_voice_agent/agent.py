@@ -17,6 +17,7 @@ from pipecat.services.ollama.llm import OLLamaLLMService
 from pipecat.services.whisper.stt import WhisperSTTService
 from pipecat.transports.base_transport import BaseTransport
 
+from campusx_voice_agent.booking_flow import BookingStateProcessor
 from campusx_voice_agent.grounding import KnowledgeContextProcessor
 from campusx_voice_agent.moss import make_moss_retrieval_processor
 from campusx_voice_agent.pipeline import (
@@ -25,7 +26,12 @@ from campusx_voice_agent.pipeline import (
     make_user_turn_params,
     run_pipeline,
 )
-from campusx_voice_agent.reply_guard import ReplyGuard, ReplyGuardProcessor, booked_from_context
+from campusx_voice_agent.reply_guard import (
+    ReplyGuard,
+    ReplyGuardProcessor,
+    booked_from_context,
+    forced_from_context,
+)
 from campusx_voice_agent.tools import ALLOWED_PHRASES, GUIDANCE_SYSTEM_PROMPT, GUIDANCE_TOOLS
 
 DEFAULT_OLLAMA_MODEL = "qwen2.5:7b"
@@ -79,6 +85,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             allowed_phrases=ALLOWED_PHRASES,
             booked=booked_from_context(context),
         ),
+        forced=forced_from_context(context),
         name="ReplyGuard",
     )
 
@@ -87,6 +94,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         stt,
         user_aggregator,
         retrieval,
+        BookingStateProcessor(GUIDANCE_TOOLS, name="BookingState"),
         llm,
         reply_guard,
         tts,

@@ -26,6 +26,7 @@ from pipecat.frames.frames import (
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
+from campusx_voice_agent.booking_flow import forced_readback
 from campusx_voice_agent.booking_gate import booking_confirmed_this_turn
 from campusx_voice_agent.text_cleanup import ensure_terminal, strip_markdown_line
 
@@ -46,12 +47,15 @@ INTERNAL_MARKERS = TOOL_NAMES + ("[kb-context]",)
 # Kept separate from evals/checks.py on purpose: the eval must not grade the guard with the
 # guard's own patterns.
 _BOOKED_CLAIM = re.compile(
-    r"(i('ve| have)\s+(successfully\s+)?booked|i\s+booked|"
+    r"(i('ve| have)\s+(successfully\s+)?(booked|scheduled|reserved)|i\s+booked|"
     r"you('re| are)\s+(all set|booked|confirmed)|"
-    r"(has|have)\s+been\s+(booked|confirmed|scheduled)|booking\s+(is\s+)?(confirmed|complete|done)|"
-    r"successfully\s+(booked|scheduled)|session\s+is\s+(booked|confirmed|scheduled))",
+    r"your\s+(free\s+)?(guidance\s+)?(session|slot|booking|appointment)\s+"
+    r"(is|has\s+been|was)\s+(now\s+)?(booked|confirmed|scheduled|reserved)|"
+    r"booking\s+(is\s+)?(confirmed|complete|done)|successfully\s+(booked|scheduled))",
     re.IGNORECASE,
 )
+# Deliberately NOT matched: "the AI Pulse session has been scheduled for 28 August" or
+# "that session is confirmed". Those describe the CampusX schedule, not the caller's booking.
 _FOLLOWUP_PROMISE = re.compile(
     r"((confirmation|reminder)\s+(e-?mail|message|sms|text)|"
     r"(will|'ll)\s+(receive|get)\s+(an?\s+)?(e-?mail|confirmation|reminder|call))",
@@ -161,27 +165,41 @@ class ReplyGuard:
 class ReplyGuardProcessor(FrameProcessor):
     """Pipecat wrapper: sits between the LLM and TTS and rewrites LLM text frames."""
 
-    def __init__(self, guard: ReplyGuard, **kwargs) -> None:
+    def __init__(
+        self, guard: ReplyGuard, forced: Callable[[], str | None] = lambda: None, **kwargs
+    ) -> None:
         super().__init__(**kwargs)
         self._guard = guard
+        self._forced_fn = forced
+        self._forced: str | None = None
 
     async def process_frame(self, frame: Frame, direction: FrameDirection):
         await super().process_frame(frame, direction)
 
         if isinstance(frame, LLMFullResponseStartFrame):
             self._guard.new_response()
+            self._forced = (
+                self._forced_fn()
+            )  # a read-back written by code replaces the model's words
             await self.push_frame(frame, direction)
         elif isinstance(frame, LLMTextFrame) and not frame.skip_tts:
-            for sentence in self._guard.feed(frame.text):
-                await self._push_sentence(sentence, direction)
+            if self._forced is None:
+                for sentence in self._guard.feed(frame.text):
+                    await self._push_sentence(sentence, direction)
         elif isinstance(frame, LLMFullResponseEndFrame):
-            for sentence in self._guard.flush():
-                await self._push_sentence(sentence, direction)
+            if self._forced is not None:
+                await self._push_sentence(self._forced, direction)
+                logger.info("ReplyGuard spoke the code-written read-back")
+                self._forced = None
+            else:
+                for sentence in self._guard.flush():
+                    await self._push_sentence(sentence, direction)
             if self._guard.interventions:
                 logger.info("ReplyGuard interventions: {}", self._guard.interventions)
             await self.push_frame(frame, direction)
         elif isinstance(frame, InterruptionFrame):
             self._guard.new_response()
+            self._forced = None
             await self.push_frame(frame, direction)
         else:
             await self.push_frame(frame, direction)
@@ -193,3 +211,8 @@ class ReplyGuardProcessor(FrameProcessor):
 def booked_from_context(context) -> Callable[[], bool]:
     """Live-pipeline helper: did a booking succeed after the caller's latest message?"""
     return lambda: booking_confirmed_this_turn(context.get_messages())
+
+
+def forced_from_context(context) -> Callable[[], str | None]:
+    """Live-pipeline helper: the code-written read-back for this turn, if there is one."""
+    return lambda: forced_readback(context.get_messages())
